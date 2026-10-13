@@ -25,7 +25,7 @@ Lands at the end of the hook, repeated on the takeaway slide. Every slide must s
 | # | Section | Time | Content |
 |---|---|---|---|
 | 1 | Title | — | |
-| 2 | Hook | 1:30 | Global, not tied to the scenario. (a) The promise: send encrypted data, the cloud computes without the key, you decrypt the result. "The Holy Grail." (b) The cost of one op, measured on my laptop: `a > b` on two 8-bit ints, ~1 ns plain vs X ms TFHE-rs (×10⁶-ish), shown big. (c) Thesis line: "In practice, it's hell. Let's see what it's like to build something." |
+| 2 | Hook | 1:30 | Global, not tied to the scenario. (a) The promise: send encrypted data, the cloud computes without the key, you decrypt the result. "The Holy Grail." (b) The cost of one op, measured on my laptop: `a > b` on two 8-bit ints, ~0.6 ns plain vs ~37 ms TFHE-rs (×10⁷-ish), shown big. (c) Thesis line: "In practice, it's hell. Let's see what it's like to build something." |
 | 3 | Me | 0:30 | |
 | 4 | Roadmap | 0:30 | One visual slide (not a bullet list) |
 | 5 | Refresher | 1:30 | One slide: homomorphism equation, noise grows, bootstrapping resets it. No lattices. |

@@ -222,8 +222,10 @@ fn meta(runs: usize) -> String {
             .unwrap_or_default()
     };
     let cores = std::thread::available_parallelism().map_or(0, |n| n.get());
+    // TFHE-rs parallelises with rayon, which RAYON_NUM_THREADS caps
+    let threads = std::env::var("RAYON_NUM_THREADS").map_or(cores, |t| t.parse().unwrap());
     format!(
-        "{{\n  \"machine\": \"{}\",\n  \"chip\": \"{}\",\n  \"cores\": {cores},\n  \"tfhe\": \"{TFHE_VERSION}\",\n  \"date\": \"{}\",\n  \"runs\": {runs}\n}}\n",
+        "{{\n  \"machine\": \"{}\",\n  \"chip\": \"{}\",\n  \"cores\": {cores},\n  \"threads\": {threads},\n  \"tfhe\": \"{TFHE_VERSION}\",\n  \"date\": \"{}\",\n  \"runs\": {runs}\n}}\n",
         sh("sysctl", "-n hw.model"),
         sh("sysctl", "-n machdep.cpu.brand_string"),
         sh("date", "+%F"),
