@@ -25,14 +25,14 @@ Lands at the end of the hook, repeated on the takeaway slide. Every slide must s
 | # | Section | Time | Content |
 |---|---|---|---|
 | 1 | Title | — | |
-| 2 | Hook | 1:30 | Global, not tied to the scenario. (a) The promise: send encrypted data, the cloud computes without the key, you decrypt the result. "The Holy Grail." (b) The cost of one op, measured on my laptop: `a > b` on two 8-bit ints, ~0.6 ns plain vs ~37 ms TFHE-rs (×10⁷-ish), shown big. (c) Thesis line: "In practice, it's hell. Let's see what it's like to build something." |
+| 2 | Hook | 1:30 | Global, not tied to the scenario. (a) The promise: send encrypted data, the cloud computes without the key, you decrypt the result. "The Holy Grail." (b) The cost of one op, measured on my laptop: `a > b` on two 8-bit ints, ~0.6 ns plain vs ~37 ms TFHE-rs (×10⁷-ish), shown big, framed as throughput: "one encrypted comparison: 37 ms. Meanwhile your CPU does ~60 million plain ones." (c) Thesis line: "In practice, it's hell. Let's see what it's like to build something." |
 | 3 | Me | 0:30 | |
 | 4 | Roadmap | 0:30 | One visual slide (not a bullet list) |
 | 5 | Refresher | 1:30 | One slide: homomorphism equation, noise grows, bootstrapping resets it. No lattices. |
 | 6 | Snippet: **init** | 1:00 | Normal: nothing. FHE: params, key generation, ship server key to the server. Mention key size here. |
 | 7–11 | Snippets ×5 | 5:00 | One slide per catalogue item, normal ↔ FHE side by side (see catalogue). Order for building surprise; vary layout (one slide = the Rust compile error). |
 | 12 | Scenario + pipeline | 2:00 | "Putting it all together": smart meter scenario in pseudo-code (named steps), pipeline diagram client ↔ server, plain FHE sizes on the arrows (server key once, daily upload, daily download), plus one line: "with TFHE-rs compression: X MB, at the cost of Y ms server time". Code is NOT shown (it's on GitHub). |
-| 13–14 | Benchmark | 3:30 | Per-step timing chart (log scale, plain vs FHE, same step names as the pseudo-code) + FHE-only stacked share ("X% of the time is the tariff lookup"). Hardware noted. Pays off the hook's one-op number. |
+| 13–14 | Benchmark | 3:30 | Per-step timing chart: **FHE only, linear, seconds** (same step names as the pseudo-code) + stacked share ("X% of the time is `budget_hour`"; look at the final numbers). One plain comparison, as throughput for the whole `day`: "1 household-day: ~30 s encrypted. In those 30 s, plain Rust computes ~1 billion household-days." Hardware noted (4P + 6E, fanless). Pays off the hook's one-op number. |
 | 15 | Schemes & deployments | 2:00 | "No best scheme, only the one that hurts least": TFHE vs BFV/BGV vs CKKS for *this* program. Real deployments = small targeted lookups. |
 | 16 | Weird pitfalls | 1:00 | One slide: no integrity; revealing decryptions can leak the key (Li & Micciancio, one line). Mitigation = more noise, bigger params → **even slower and bigger**. No side channels. |
 | 17 | Takeaway | 1:30 | When FHE is worth the cost vs TEE / MPC / ZK. Thesis line again. QR code → GitHub repo. |
@@ -89,7 +89,7 @@ Privacy motivation: hourly electricity use reveals when someone is home.
 ## Benchmark methodology
 
 - `cargo run --release`, on **my laptop**: MacBook Air M4 (`Mac16,12`), **4 performance + 6 efficiency cores**, fanless. Say "4P + 6E cores" on the slide, not "10 cores". These are the numbers that go on the slides.
-- Time every step in both versions with `Instant::now()`, plus `keygen`, `encrypt`, `decrypt` as separate rows.
+- Time every FHE step with `Instant::now()`, plus `keygen`, `encrypt`, `decrypt` as separate rows, and the whole scenario as `day`. Plain is timed only as `day` (whole scenario, looped 10⁶× and averaged) and `gt_u8` (hook): single plain steps are sub-nanosecond, i.e. noise (decided 13 Oct).
 - Hook number: one `FheUint8` `gt` vs plain `u8 >`, timed as step `gt_u8` (median over many repeats for plain, it's ~1 ns).
 - Plain baseline must use `std::hint::black_box` so it isn't optimized away.
 - Repeat the full run R times (e.g. 5, fewer if too slow), report the **median**. A 5-run benchmark takes ~4 min on 4 threads.

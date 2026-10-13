@@ -78,24 +78,18 @@ fn generate(seed: u64) -> Inputs {
     }
 }
 
-fn run_plain(t: &mut Timings, i: &Inputs) -> Outputs {
-    let readings = &i.readings;
-    let total = t.plain("total", || plain::total(black_box(readings)));
-    let rate = t.plain("tariff_lookup", || plain::tariff_lookup(black_box(i.tier)));
+/// The whole plain scenario. Timed as one `day`: single plain steps are sub-nanosecond noise.
+fn plain_day(i: &Inputs) -> Outputs {
+    let total = plain::total(&i.readings);
+    let rate = plain::tariff_lookup(i.tier);
     Outputs {
         total,
-        average: t.plain("average", || plain::average(black_box(total))),
-        peak_count: t.plain("peak_count", || {
-            plain::peak_count(black_box(readings), black_box(i.limit))
-        }),
-        peak_mask: t.plain("peak_mask", || {
-            plain::peak_mask(black_box(readings), black_box(i.limit))
-        }),
+        average: plain::average(total),
+        peak_count: plain::peak_count(&i.readings, i.limit),
+        peak_mask: plain::peak_mask(&i.readings, i.limit),
         rate,
-        bill: t.plain("bill", || plain::bill(black_box(total), black_box(rate))),
-        budget_hour: t.plain("budget_hour", || {
-            plain::budget_hour(black_box(readings), black_box(i.budget))
-        }),
+        bill: plain::bill(total, rate),
+        budget_hour: plain::budget_hour(&i.readings, i.budget),
     }
 }
 
@@ -154,10 +148,8 @@ fn main() -> std::io::Result<()> {
         let expected_gt = t.plain("gt_u8", || {
             plain::gt_u8(black_box(inputs.a), black_box(inputs.b))
         });
-        let expected = run_plain(&mut t, &inputs);
-        let expected_avg_n = t.plain("average_secret_n", || {
-            plain::average_secret_n(black_box(expected.total), black_box(N as u32))
-        });
+        let expected = t.plain("day", || plain_day(black_box(&inputs)));
+        let expected_avg_n = plain::average_secret_n(expected.total, N as u32);
         assert!(
             expected.peak_count > 0 && expected.budget_hour < N as u8,
             "boring day, try another seed: {expected:?}"
@@ -173,7 +165,10 @@ fn main() -> std::io::Result<()> {
         tfhe::set_server_key(sk);
         let enc = t.fhe("encrypt", || fhe::encrypt(&inputs, &ck));
         let enc_gt = t.fhe("gt_u8", || fhe::gt_u8(&enc.a, &enc.b));
+        let start = Instant::now();
         let enc_out = run_fhe(&mut t, &enc);
+        let nanos = start.elapsed().as_nanos() as f64;
+        t.rows.push(("fhe", "day", run, nanos));
         let enc_avg_n = t.fhe("average_secret_n", || {
             fhe::average_secret_n(&enc_out.total, &enc.n)
         });

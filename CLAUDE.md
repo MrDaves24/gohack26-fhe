@@ -23,7 +23,7 @@ bench/               # Rust crate: plain vs FHE smart meter + benchmark harness
 
 - Pin **`tfhe = { version = "=1.8.1", ... }`**. Do not upgrade. Check the API and required feature flags against docs.rs for **1.8.1** specifically; don't rely on memory of older/newer TFHE-rs APIs.
 - Prefer the high-level API (`FheUint8/16/32`, `FheBool`, `ConfigBuilder`, `generate_keys`, `set_server_key`).
-- Step names are fixed and shared across code, slides and charts: `keygen`, `encrypt`, `total`, `average`, `peak_count`, `peak_mask`, `tariff_lookup`, `bill`, `budget_hour`, `decrypt`, plus `gt_u8` (single comparison, for the hook slide), `average_secret_n` (same average divided by an encrypted count, for the division slide) and, for the optional compression variant, `expand` and `compress`.
+- Step names are fixed and shared across code, slides and charts: `keygen`, `encrypt`, `total`, `average`, `peak_count`, `peak_mask`, `tariff_lookup`, `bill`, `budget_hour`, `decrypt`, plus `day` (the whole scenario; the only plain row besides `gt_u8`), `gt_u8` (single comparison, for the hook slide), `average_secret_n` (same average divided by an encrypted count, for the division slide) and, for the optional compression variant, `expand` and `compress`.
 - Each FHE step should be a small, readable function: its body is what goes on the snippet slides. Favor clarity over cleverness; add a short comment naming the FHE workaround (e.g. `// no branch: compute both, select`).
 - Step code (`plain.rs`, `fhe.rs`) is C-like, almost pseudocode: index `for` loops, `if`, explicit types. No iterator chains or clever Rust; the audience doesn't read Rust.
 - Plain baseline: wrap inputs/outputs in `std::hint::black_box` *inside* the timed closure, or the compiler hoists the work out of the loop.
@@ -39,7 +39,7 @@ bench/               # Rust crate: plain vs FHE smart meter + benchmark harness
 - Custom header with a rainbow progress bar under the gray header (`header-progress` helper, `footer-progress: false`). Keep it.
 - Focus slide at the end: big "Thanks for your attention", smaller "Any question?".
 - Speaker notes via `#speaker-note[...]` (exported to `.pdfpc`).
-- Charts read `bench/results/*.csv` directly (`csv()` / `json()` in Typst) so re-running the benchmark updates the slides. Log scale for timings.
+- Charts read `bench/results/*.csv` directly (`csv()` / `json()` in Typst) so re-running the benchmark updates the slides. Per-step chart: FHE only, linear scale, seconds. Plain Rust appears only as `day` (throughput comparison) and `gt_u8` (hook): single plain steps are sub-nanosecond noise.
 - Build: `./compile.sh` → `build/presentation-16-9.pdf` + `.pdfpc`. Present with `pdfpc build/presentation-16-9.pdf`.
 - Compile and visually check slides after edits (render a few pages to PNG with `typst compile ... '{p}.png'` if needed).
 
