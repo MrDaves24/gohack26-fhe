@@ -1,0 +1,80 @@
+# When is FHE worth it? FHE vs TEE, MPC and ZK
+
+Checked 2026-10-13. Sources are linked inline. "UNVERIFIED" marks what I could not confirm from a primary source.
+
+## Summary (slide-ready)
+
+- **They differ in whom you trust.** A TEE trusts the chip vendor, MPC trusts that the parties don't collude, ZK keeps the data with the prover, and FHE trusts only the math. Each step costs more.
+- **TEEs are nearly free, but cheap hardware breaks them.** Under 7% overhead for LLM inference on an H100 ([arXiv 2409.03992](https://arxiv.org/abs/2409.03992)). A $10 DIMM trick broke SEV-SNP attestation ([BadRAM, S&P 2025](https://badram.eu/)). A <$1,000 DDR5 interposer pulled attestation keys from TDX and SEV-SNP ([TEE.fail, S&P 2026](https://tee.fail/)). Intel and AMD call physical attacks out of scope ([Battering RAM](https://batteringram.eu/)).
+- **MPC is already deployed, but it needs at least two organisations that don't collude.** The cost is network traffic, not compute: "The bottleneck of GC efficiency is communication" ([Heath & Kolesnikov, CRYPTO 2020](https://eprint.iacr.org/2020/973)). Deployed for the Danish sugar beet auction in 2008 ([ePrint 2008/068](https://eprint.iacr.org/2008/068)) and for COVID exposure-notification analytics ([Divvi Up](https://divviup.org/blog/lessons-from-running-mpc-at-scale/)).
+- **ZK proves; it doesn't outsource.** The prover has the data, and proving costs up to ~10^6× native for a general zkVM ([Thaler, a16z 2025](https://a16zcrypto.com/posts/article/secure-efficient-zkvms-progress/)). It ships in rollups and in EU age verification ([AV blueprint, Annex B](https://docs.ageverification.dev/av-doc-technical-specification/docs/annexes/annex-B/annex-B-zkp/)).
+- **FHE is the only option with one server and no hardware or collusion assumption. It is also the slowest (~10^9× in our benchmark), and it gives no integrity.** Real systems mix them. Zama runs FHE, uses ZK for inputs and threshold MPC for decryption, all inside AWS Nitro Enclaves ([litepaper](https://docs.zama.org/protocol/zama-protocol-litepaper)).
+
+## Comparison table
+
+| Technology | Who must you trust | Protects against | Main cost | Integrity? | Real deployment |
+|---|---|---|---|---|---|
+| **TEE** (SGX, TDX, SEV-SNP, CCA, H100 CC) | CPU/GPU vendor, its attestation keys, its firmware | Cloud operator, hypervisor, other tenants; **not** physical attackers | ~0–10% on compute, much more for I/O | Yes, if the hardware holds | Signal contact discovery (SGX), Apple PCC (TEE-like) |
+| **MPC** | That parties don't collude (non-collusion / honest majority) | Any single party, including each server | Network: bandwidth and rounds | Only with a maliciously secure protocol | Sugar beet auction, COVID ENPA (Prio), Firefox telemetry, MPC wallets |
+| **ZK proofs** | Only the math (plus a trusted setup for some SNARKs, UNVERIFIED here); the prover sees the data | A verifier learning the inputs; a cheating prover | Prover: 10^4–10^6× native | **Yes: that is the point** | zk-rollups, Sui zkLogin, Google Wallet / EU age verification |
+| **FHE** | Nobody except the key holder: only lattice hardness | Server, operator, insiders, physical access | Compute: ~10^9× (our meter: 33 s vs 18 ns), 181 MB server key | **No**: the server can return a wrong result | Zama Protocol (Ethereum), Apple Live Caller ID, Edge Password Monitor (see `deployments.md`) |
+
+## 1. TEEs (trusted execution environments)
+
+- **What they protect, and from whom.** TDX makes memory "opaque to cloud service providers (CSP) or operators" and blocks access "by cloud providers or other tenants" ([Intel TDX](https://www.intel.com/content/www/us/en/developer/tools/trust-domain-extensions/overview.html)). Data is in **plaintext inside the CPU**: the hardware is the boundary, not the math.
+- **Trust assumption: the vendor.** Remote attestation "provides a cryptographic guarantee of the code that is running in a remote enclave" ([Signal 2017](https://signal.org/blog/private-contact-discovery/)). It is rooted in per-CPU vendor keys, e.g. Intel's provisioning certification key, which signs SGX and TDX attestations ([TEE.fail](https://tee.fail/)). Whoever steals those keys can fake an enclave.
+- **Threat model excludes physical attacks.** Intel and AMD "classified physical attacks on DRAM as outside their current threat model scope" ([Battering RAM](https://batteringram.eu/)). AMD calls interposer attacks "out of scope" for SEV-SNP ([TEE.fail](https://tee.fail/)).
+- **Overhead (order of magnitude).**
+  - CPU confidential VMs (SIGMETRICS 2025): up to 92% more for initial memory allocation, up to 60% drop for heavy network I/O, and a worst case of 431% from vCPU sleep/wake. The TCB is "millions of Lines of Code" ([Misono et al., DOI 10.1145/3726854.3727280](https://doi.org/10.1145/3726854.3727280)). Compute-bound work is cheap, I/O and context switches are not.
+  - GPU (H100 CC): "the overhead remains below 7%, with larger models and longer sequences experiencing nearly zero overhead". The cost is PCIe transfers, not GPU compute ([arXiv 2409.03992](https://arxiv.org/abs/2409.03992)).
+- **Attacks (selection):**
+  - *Foreshadow* (USENIX Security 2018, CVE-2018-3615): a transient-execution attack that "extracted the attestation keys" of SGX's Quoting Enclave ([foreshadowattack.eu](https://foreshadowattack.eu/)).
+  - *SGAxe* (2020): extracts SGX attestation keys, so attackers can "sign fake attestation quotes" ([sgaxe.com](https://sgaxe.com/)).
+  - *ÆPIC Leak* (USENIX Security 2022, CVE-2022-21233): an "architectural bug", not a side channel, that leaks stale data from SGX on most 10th–12th gen Intel CPUs ([aepicleak.com](https://aepicleak.com/)).
+  - *BadRAM* (IEEE S&P 2025, CVE-2024-21944): a rogue DIMM SPD chip, about $10 of hardware, lets the attacker "capture and replay the expected attestation measurement" on AMD SEV-SNP. Scalable SGX and TDX have countermeasures; AMD shipped firmware fixes ([badram.eu](https://badram.eu/)).
+  - *Battering RAM* (IEEE S&P 2026): a <$50 DDR4 interposer gives plaintext access and breaks attestation on Scalable SGX and SEV-SNP ([batteringram.eu](https://batteringram.eu/)).
+  - *TEE.fail* (IEEE S&P 2026): a <$1,000 DDR5 bus interposer (it fits in a briefcase) against TDX and SEV-SNP with Ciphertext Hiding. It extracts the PCK attestation key, which in turn defeats NVIDIA GPU Confidential Computing. Root cause: deterministic AES-XTS memory encryption ([tee.fail](https://tee.fail/)).
+  - Side channels are an old problem. Signal noted in 2017 that "the host OS can still see memory access patterns" and made its enclave scan all users obliviously ([Signal](https://signal.org/blog/private-contact-discovery/)).
+- **Deployments:**
+  - *Signal contact discovery*: an SGX enclave, launched as a preview on 2017-09-26 ([Signal](https://signal.org/blog/private-contact-discovery/)). The current service still has "SGX-side C code" ([CDSI repo](https://github.com/signalapp/ContactDiscoveryService-Icelake)).
+  - *Apple Private Cloud Compute*: TEE-like, but Apple doesn't call it a TEE. It runs on custom Apple-silicon servers with Secure Enclave and Secure Boot. The client encrypts "directly to the public keys of the PCC nodes that it has first confirmed are valid", and Apple says "complete end-to-end encryption is not an option" because the node must read the request ([Apple Security, 2024-06-10](https://security.apple.com/blog/private-cloud-compute/)). So the trust goes to the hardware plus public software transparency, not to cryptography.
+
+## 2. MPC (secure multi-party computation)
+
+- **Trust assumption:** no coalition of parties large enough to reconstruct the data. ENPA's privacy "rel[ies] on a non-collusion assumption, which means that no single organization controls both of the aggregator servers" ([Divvi Up](https://divviup.org/blog/lessons-from-running-mpc-at-scale/)). Many deployments are only **semi-honest**: the parties follow the protocol. The sugar beet auction chose "semi-honest security" ([ePrint 2008/068](https://eprint.iacr.org/2008/068)). The Boston study relies on "passive (semi-honest) security and without collusion" ([Lapets et al., SecDev 2016](https://cs-web.bu.edu/fac/best/res/papers/secdev16.pdf)). Semi-honest means no integrity against a cheating party.
+- **Cost driver: communication.** "The bottleneck of GC efficiency is communication" ([Heath & Kolesnikov, CRYPTO 2020](https://eprint.iacr.org/2020/973)). With half-gates, each AND gate costs two ciphertexts on the wire and XOR is free ([Zahur, Rosulek, Evans, ePrint 2014/756](https://eprint.iacr.org/2014/756)). So latency and bandwidth between the parties set the speed, not the CPU.
+- **Overhead factor:** I found no single authoritative "MPC is N× slower" figure. It depends on the protocol, the network and the circuit. **UNVERIFIED**; better to say "network-bound" than to quote a number.
+- **Deployments:**
+  - *Danish sugar beet auction* (January 2008): Danisco, DKS (the growers' association) and the SIMAP project acted as three servers, with 1229 bidders. It was "the first large-scale practical application of secure multiparty computation" ([Bogetoft et al., FC 2009, ePrint 2008/068](https://eprint.iacr.org/2008/068)).
+  - *Boston wage-gap study* (BWWC): run in 2015 and 2016 over 40–70 employers, "without requiring the companies to trust BWWC or Boston University" ([SecDev 2016](https://cs-web.bu.edu/fac/best/res/papers/secdev16.pdf)).
+  - *COVID Exposure Notifications Private Analytics* (Apple, Google, ISRG, NCI, MITRE, 2020–2022): Prio, two aggregators run by different organisations, "millions of Apple and Google mobile devices" ([Divvi Up](https://divviup.org/blog/lessons-from-running-mpc-at-scale/)). Firefox now sends DAP/Prio telemetry, split between Mozilla and Divvi Up aggregators ([Divvi Up](https://divviup.org/blog/divvi-up-in-firefox/)).
+  - *Ads measurement*: Meta and Mozilla's IPA (three helper parties) is a W3C PATCG **proposal and proof of concept, not a deployment** ([W3C TAG review](https://github.com/w3ctag/design-reviews/issues/823), [PDPC Singapore](https://pdpc.gov.sg/-/media/files/pdpc/pdf-files/practical-guidance-provided-by-pdpc/practical-guidance-to-data-protection-provisions-in-relation-to-meta%E2%80%99s-proof-of-concept-on-interoperable-private-attribution.pdf)). Google Private Join and Compute is additively homomorphic PSI (see `deployments.md`).
+  - *MPC custody wallets*: Fireblocks MPC-CMP: "at no point is the private key assembled" ([Fireblocks](https://support.fireblocks.io/hc/en-us/articles/6984668676124-MPC-CMP)). This is vendor documentation, not independently checked.
+
+## 3. ZK proofs (SNARKs, STARKs)
+
+- **What they solve: integrity, with privacy toward the verifier.** The prover holds the data and convinces a verifier that a computation is correct. That is the opposite of outsourcing: you can't hand your data to a ZK server and keep it secret from that server. zk-rollups prove "offchain state transitions were computed correctly", and validity proofs "do[] not, by itself, make a rollup's transactions confidential" ([ethereum.org](https://ethereum.org/en/developers/docs/scaling/zk-rollups/)).
+- **Prover overhead:** "zkVM provers incur overhead factors approaching one million times the cost of native execution". Thaler's targets are 10^5× and then 10^4× ([Thaler, a16z, 2025-03-11](https://a16zcrypto.com/posts/article/secure-efficient-zkvms-progress/)). The verifier's side is cheap: rollup proofs stay "compact and verification efficient" ([ethereum.org](https://ethereum.org/en/developers/docs/scaling/zk-rollups/)). Special-purpose circuits (an age check) should cost far less than a general zkVM: UNVERIFIED, no number found.
+- **Deployments:**
+  - *zk-rollups* on Ethereum ([ethereum.org](https://ethereum.org/en/developers/docs/scaling/zk-rollups/)).
+  - *Sui zkLogin*: a Groth16 proof that an OAuth JWT is valid, with "sensitive fields like `sub`" as private inputs. A **proving service** receives the JWT, so here the user delegates proving and trusts that service with the token ([Sui docs](https://docs.sui.io/concepts/cryptography/zklogin)).
+  - *Age verification*: Google open-sourced Longfellow ZK on 2025-07-03 "to support EU age assurance" ([Google](https://blog.google/technology/safety-security/opening-up-zero-knowledge-proof-technology-to-promote-privacy-in-age-assurance/)). The EU blueprint's Annex B adopts it, proving "the User meets the required age threshold … without disclosing their exact age". It is "deployed in Google Wallet and used for age verification by the dating app Bumble", and EUDI wallets are integrating it ([AV Annex B](https://docs.ageverification.dev/av-doc-technical-specification/docs/annexes/annex-B/annex-B-zkp/)). The blueprint v2 (2025-10-10) did not have ZKP yet ([EC](https://digital-strategy.ec.europa.eu/en/news/commission-releases-enhanced-second-version-age-verification-blueprint)).
+
+## 4. FHE in this frame
+
+- **Trust:** only the hardness of lattice problems. There is no vendor root key, no second organisation, and the server sees only ciphertexts. One untrusted server is enough. That is FHE's unique selling point in the table.
+- **No integrity:** the ciphertexts are malleable by design, so a malicious server can return a wrong result or `Enc(0)`, or tamper with ciphertexts to mount key-recovery attacks. "The same malleability that enables homomorphic computations also raises integrity issues" ([Viand, Knabenhans, Hithnawi, arXiv 2301.07041](https://arxiv.org/abs/2301.07041); details in `attacks.md`). Verifiable FHE is still research.
+- **Cost:** our benchmark, ~33 s vs ~18 ns for one smart-meter day, a 3.6 MB daily upload and a 181 MB server key (`bench/results/`).
+
+## 5. Combinations
+
+- **FHE + MPC (threshold decryption):** the Zama Protocol splits the FHE decryption key "using a dedicated threshold MPC protocol", with "13 nodes with a 2/3 majority rule" ([litepaper](https://docs.zama.org/protocol/zama-protocol-litepaper)). So decryption trusts non-collusion, even though computation does not.
+- **FHE + TEE:** in the same system, "our MPC protocol runs inside AWS Nitro Enclaves, adding a layer of defense in depth" ([litepaper](https://docs.zama.org/protocol/zama-protocol-litepaper)).
+- **FHE + ZK:**
+  - *Inputs*: Zama uses ZK proofs of knowledge "only" to check that "encrypted inputs … were actually encrypted correctly", which keeps them cheap enough for a browser ([litepaper](https://docs.zama.org/protocol/zama-protocol-litepaper)).
+  - *Computation*: Zama does not prove the FHE computation itself. It uses "multiple coprocessors with a majority consensus" and public re-execution (same source), which is again trust in non-collusion. Proving the whole FHE computation is the verifiable-FHE research direction ([arXiv 2301.07041](https://arxiv.org/abs/2301.07041)).
+- **TEE + MPC:** Signal SVR3 (OSDI 2024) splits PIN-recovery secrets across SGX on Azure, SEV-SNP on Google Cloud and Nitro on AWS, "so a single type of enclave does not become a central point of attack". It costs "$0.0025/user/year" and has capacity "for over 500 million users" ([USENIX OSDI 2024](https://www.usenix.org/conference/osdi24/presentation/connell)). This is a good answer to "TEEs keep breaking": combine vendors.
+
+## Talk angle
+
+For the smart meter, a TEE would make the bill nearly free, but the customer must trust Intel or AMD and the utility's physical security. MPC would need a second, independent organisation, such as a regulator, to run a server. ZK fits the inverse problem: the meter proves its bill is right without sending the readings. FHE is the only one where the utility alone computes and learns nothing, at ~10^9× the cost and with no guarantee that it computed honestly.
