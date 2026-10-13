@@ -119,7 +119,7 @@ Don't decide in advance which step is worst. Look at the numbers before writing 
 - **BFV/BGV:** exact integers, SIMD batching (thousands of slots) → `total` nearly free; comparisons expensive.
 - **CKKS:** approximate reals, great for ML inference; comparison = polynomial approximation of sign → slow, imprecise.
 - Message: choosing TFHE favors the comparison-heavy steps and penalizes `total`. *No best scheme, only the least painful for your program.*
-- **The example to use: summing.** `total` (24 additions) is our 2nd slowest step, 6.4 s; a month of 15-min readings (~2900 values) would take ~1 h in TFHE. With BFV/CKKS batching, thousands of values sit in one ciphertext and add up in a handful of operations: the month's total becomes cheap. Same program, the scheme alone moves a step from worst to trivial.
+- **The example to use: summing.** `total` (24 additions) is our 2nd slowest step, 6.4 s; a month of 15-min readings (~2900 values) would take ~14 min for `total` alone (~0.28 s per encrypted add), ~1 h for the whole scenario. See `research/schemes.md` for batching costs. With BFV/CKKS batching, thousands of values sit in one ciphertext and add up in a handful of operations: the month's total becomes cheap. Same program, the scheme alone moves a step from worst to trivial.
 - Optional stretch (only if ahead of schedule): benchmark just `total` with CKKS/BFV via OpenFHE Python bindings, one extra bar.
 
 ## Could do (only if ahead of schedule)
@@ -133,11 +133,13 @@ Don't decide in advance which step is worst. Look at the numbers before writing 
 
 ## To verify before putting on slides
 
-- [ ] Deployments: Apple (BFV, iOS 18 Live Caller ID Lookup / Enhanced Visual Search), Microsoft Edge Password Monitor, Zama (confidential smart contracts / fhEVM) — check current sources.
-- [ ] Li & Micciancio, Eurocrypt 2021 (IND-CPA^D, key recovery on CKKS from shared decryptions) — exact citation; one line on follow-up work on exact schemes; current library mitigations (noise flooding).
-- [ ] Scheme facts above.
-- [ ] FHE in deployment is memory/IO-bound rather than compute-bound (source for the backup slide).
-- [ ] "Holy Grail" attribution for FHE / Gentry 2009 (hook slide).
+Findings and sources: `research/deployments.md`, `research/attacks.md`, `research/schemes.md`, `research/history-and-bottlenecks.md`. Check each file's UNVERIFIED items before quoting them.
+
+- [x] Deployments: Apple (BFV, iOS 18 Live Caller ID Lookup / Enhanced Visual Search), Microsoft Edge Password Monitor, Zama (confidential smart contracts / fhEVM) — check current sources.
+- [x] Li & Micciancio, Eurocrypt 2021 (IND-CPA^D, key recovery on CKKS from shared decryptions) — exact citation; one line on follow-up work on exact schemes; current library mitigations (noise flooding).
+- [x] Scheme facts above.
+- [x] FHE in deployment is memory/IO-bound rather than compute-bound (source for the backup slide).
+- [x] "Holy Grail" attribution for FHE / Gentry 2009 (hook slide).
 - [ ] Time of day of the 23 Oct deadline (ask organizers).
 
 ## Schedule
