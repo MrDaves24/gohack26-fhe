@@ -32,7 +32,7 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | 3 | About me | 0:30 | Name, SaaS developer & consultant, MSc HES in cybersecurity, applied research in cryptography, Codexa logo, codexa.swiss, pascal@codexa.swiss. Done. |
 | 4 | Roadmap | 0:30 | ① rewrites → ② overhead → ③ real world, as a visual. |
 | | **FHE in one slide** | | |
-| 5 | Refresher | 1:30 | Homomorphism equation, noise grows, bootstrapping resets it. One line: "TFHE has two moves: cheap linear algebra, and a lookup table that also resets the noise; everything else is built from those" (`research/operations.md`). No lattices. |
+| 5 | Refresher | 1:30 | Homomorphism equation, noise grows, bootstrapping resets it. One line: "TFHE has two moves: cheap linear algebra, and a lookup table that also resets the noise; everything else is built from those" (`research/operations.md`). No lattices. **Draft only: revisit last** (decided 13 Oct): once the main content is written, gather here the background it needs, instead of footnotes and remarks on every slide. |
 | | **① Rewriting code** | | |
 | 6 | Init | 1:00 | Plain: nothing. FHE: params, keygen, ship the 181 MB server key to the server. |
 | 7 | Branching | 1:00 | `if` on a secret doesn't compile (`FheBool` is not `bool`): show the Rust compile error, then compute both sides and select. |
