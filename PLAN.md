@@ -32,7 +32,7 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | 3 | About me | 0:30 | Name, SaaS developer & consultant, MSc HES in cybersecurity, applied research in cryptography, Codexa logo, codexa.swiss, pascal@codexa.swiss. Done. |
 | 4 | Roadmap | 0:30 | ① rewrites → ② overhead → ③ real world, as a visual. |
 | | **FHE in one slide** | | |
-| 5 | Refresher | 1:30 | Homomorphism equation, noise grows, bootstrapping resets it. No lattices. |
+| 5 | Refresher | 1:30 | Homomorphism equation, noise grows, bootstrapping resets it. One line: "TFHE has two moves: cheap linear algebra, and a lookup table that also resets the noise; everything else is built from those" (`research/operations.md`). No lattices. |
 | | **① Rewriting code** | | |
 | 6 | Init | 1:00 | Plain: nothing. FHE: params, keygen, ship the 181 MB server key to the server. |
 | 7 | Branching | 1:00 | `if` on a secret doesn't compile (`FheBool` is not `bool`): show the Rust compile error, then compute both sides and select. |
@@ -137,7 +137,7 @@ Don't decide in advance which step is worst. Look at the numbers before writing 
 
 ## Could do (only if ahead of schedule)
 
-- **Naive vs optimized.** Our FHE code is deliberately naive (readable snippets). An optimized variant of the same steps: independent hours in parallel (`peak_mask`, `peak_count`), tree sum for `total`/`budget_hour`, a faster parameter set (e.g. multi-bit). Measured as extra steps, one chart: "what an expert can win back". Plain/FHE equality still asserted.
+- **Naive vs optimized.** Our FHE code is deliberately naive (readable snippets). An optimized variant of the same steps: independent hours in parallel (`peak_mask`, `peak_count`), tree sum for `total`/`budget_hour` (TFHE-rs has one: `FheUint` implements `std::iter::Sum`, see `research/operations.md`), a faster parameter set (e.g. multi-bit). Measured as extra steps, one chart: "what an expert can win back". Plain/FHE equality still asserted.
 
 ## Notes for the slides (no measurement, no numbers)
 

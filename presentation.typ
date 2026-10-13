@@ -147,6 +147,8 @@
 
 #speaker-note[
   Compute on ciphertexts, noise grows with each operation, bootstrapping resets it.
+  TFHE has two moves: cheap linear algebra, and a lookup table that also resets the noise.
+  Everything else (+, >, select, ×) is built from those (research/operations.md).
   That's all the maths you need.
 ]
 
@@ -450,7 +452,7 @@ The 64-bit word, $Delta = 2^59$:
   TFHE-rs packs c next to each 2-bit block (x = 2·block + c, fits in the 4-bit block thanks
   to the carry space) and bootstraps with a lookup table "block if c else 0".
   ~3 bootstraps per block with two ciphertexts; one bootstrap of c when both sides are plain
-  values (our peak_count). Sources: research/select.md (tfhe 1.8.1, radix_parallel/cmux.rs).
+  values (our peak_count). Sources: research/operations.md (tfhe 1.8.1, radix_parallel/cmux.rs).
 ]
 
 #[
