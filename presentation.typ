@@ -81,6 +81,11 @@
   align(center, text(size: 0.9em, caption))
 }
 
+// A labelled bar segment, for size diagrams.
+#let block-box(w, fill, body) = box(
+  width: w, height: 1.6em, fill: fill, inset: 0.4em, align(center + horizon, body),
+)
+
 // --- Benchmark results ------------------------------------------------------------------
 
 #let timings = csv("bench/results/timings.csv", row-type: dictionary)
@@ -331,3 +336,51 @@
 == Why not MPC or a TEE?
 
 == Why don't more cores help?
+
+== Why is an encrypted byte 66 KB?
+
+#speaker-note[
+  Default TFHE-rs 1.8.1 parameters: 2 message bits per block, so FheUint8 = 4 blocks.
+  Each block is an LWE ciphertext: 2048 random mask values + 1 body, all u64 = 16 KB.
+  Details and sources: research/ciphertext-size.md.
+]
+
+#[
+#set text(size: 0.8em)
+`FheUint8` = 4 blocks, each carrying *2 bits*:
+#v(0.2em)
+#stack(dir: ltr, spacing: 3pt, ..range(4).map(_ => block-box(24%, cyan.lighten(60%))[2 bits]))
+#v(0.6em)
+One block = one LWE ciphertext of 64-bit values:
+#v(0.2em)
+#stack(
+  dir: ltr,
+  spacing: 3pt,
+  block-box(91%, gray.lighten(60%))[mask: 2048 random values],
+  block-box(8%, navy, text(fill: white)[body]),
+)
+#align(center)[2049 × 8 B = *16 392 B* per block, to carry 2 bits]
+#v(0.6em)
+#grid(
+  columns: (auto, 1fr),
+  column-gutter: 2em,
+  table(
+    columns: 3,
+    stroke: none,
+    align: (left, right, right),
+    table.header[*Type*][*Blocks*][*Size*],
+    [`FheBool`], [1], [#kb("FheBool")],
+    [`FheUint8`], [4], [#kb("FheUint8")],
+    [`FheUint16`], [8], [#kb("FheUint16")],
+    [`FheUint32`], [16], [#kb("FheUint32")],
+  ),
+  align(horizon)[
+    Most of it is randomness: a *compressed* ciphertext sends a seed instead of the mask.
+    #v(0.4em)
+    #text(size: 0.75em, fill: gray.darken(20%))[
+      TFHE-rs 1.8.1 default parameters (`PARAM_MESSAGE_2_CARRY_2_KS_PBS_TUNIFORM_2M128`):
+      2 message bits per block, LWE dimension 2048, modulus 2⁶⁴.
+    ]
+  ],
+)
+]
