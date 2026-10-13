@@ -23,13 +23,14 @@ bench/               # Rust crate: plain vs FHE smart meter + benchmark harness
 
 - Pin **`tfhe = { version = "=1.8.1", ... }`**. Do not upgrade. Check the API and required feature flags against docs.rs for **1.8.1** specifically; don't rely on memory of older/newer TFHE-rs APIs.
 - Prefer the high-level API (`FheUint8/16/32`, `FheBool`, `ConfigBuilder`, `generate_keys`, `set_server_key`).
-- Step names are fixed and shared across code, slides and charts: `keygen`, `encrypt`, `total`, `average`, `peak_count`, `peak_mask`, `tariff_lookup`, `bill`, `budget_hour`, `decrypt`, plus `gt_u8` (single comparison, for the hook slide).
+- Step names are fixed and shared across code, slides and charts: `keygen`, `encrypt`, `total`, `average`, `peak_count`, `peak_mask`, `tariff_lookup`, `bill`, `budget_hour`, `decrypt`, plus `gt_u8` (single comparison, for the hook slide) and, for the optional compression variant, `expand` and `compress`.
 - Each FHE step should be a small, readable function: its body is what goes on the snippet slides. Favor clarity over cleverness; add a short comment naming the FHE workaround (e.g. `// no branch: compute both, select`).
 - Plain baseline: wrap inputs/outputs in `std::hint::black_box`.
 - Plain and FHE outputs must be asserted equal. Fixed RNG seed for inputs.
 - Always benchmark with `--release`. Timing runs are slow: tell Pascal before starting long runs, and keep a quick mode (e.g. `--quick`, R=1) for development.
 - **Final numbers come from Pascal's MacBook Air**, not from a cloud/CI machine. Record machine, core count, tfhe version, date and R in `results/meta.json`.
-- CSV formats: `timings.csv` = `impl,step,run,nanos`; `sizes.csv` = `item,bytes`.
+- CSV formats: `timings.csv` = `impl,step,run,nanos` (fractional for plain steps, which are looped and averaged); `sizes.csv` = `item,bytes`.
+- Size items: `client_key`, `server_key`, `server_key_compressed`, one row per ciphertext type (`FheBool`, `FheUint8`…) and plain type (`bool`, `u8`…), then `upload`, `download`, and optionally `upload_compact`, `download_compressed`. Sizes are `safe_serialized_size`, i.e. what would go over the network.
 
 ## Slides (Typst)
 

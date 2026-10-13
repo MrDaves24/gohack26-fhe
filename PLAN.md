@@ -31,7 +31,7 @@ Lands at the end of the hook, repeated on the takeaway slide. Every slide must s
 | 5 | Refresher | 1:30 | One slide: homomorphism equation, noise grows, bootstrapping resets it. No lattices. |
 | 6 | Snippet: **init** | 1:00 | Normal: nothing. FHE: params, key generation, ship server key to the server. Mention key size here. |
 | 7–11 | Snippets ×5 | 5:00 | One slide per catalogue item, normal ↔ FHE side by side (see catalogue). Order for building surprise; vary layout (one slide = the Rust compile error). |
-| 12 | Scenario + pipeline | 2:00 | "Putting it all together": smart meter scenario in pseudo-code (named steps), pipeline diagram client ↔ server, sizes on the arrows. Code is NOT shown (it's on GitHub). |
+| 12 | Scenario + pipeline | 2:00 | "Putting it all together": smart meter scenario in pseudo-code (named steps), pipeline diagram client ↔ server, plain FHE sizes on the arrows (server key once, daily upload, daily download), plus one line: "with TFHE-rs compression: X MB, at the cost of Y ms server time". Code is NOT shown (it's on GitHub). |
 | 13–14 | Benchmark | 3:30 | Per-step timing chart (log scale, plain vs FHE, same step names as the pseudo-code) + FHE-only stacked share ("X% of the time is the tariff lookup"). Hardware noted. Pays off the hook's one-op number. |
 | 15 | Schemes & deployments | 2:00 | "No best scheme, only the one that hurts least": TFHE vs BFV/BGV vs CKKS for *this* program. Real deployments = small targeted lookups. |
 | 16 | Weird pitfalls | 1:00 | One slide: no integrity; revealing decryptions can leak the key (Li & Micciancio, one line). Mitigation = more noise, bigger params → **even slower and bigger**. No side channels. |
@@ -93,7 +93,8 @@ Privacy motivation: hourly electricity use reveals when someone is home.
 - Hook number: one `FheUint8` `gt` vs plain `u8 >`, timed as step `gt_u8` (median over many repeats for plain, it's ~1 ns).
 - Plain baseline must use `std::hint::black_box` so it isn't optimized away.
 - Repeat the full run R times (e.g. 5, fewer if too slow), report the **median**. Run the full benchmark overnight if needed.
-- Sizes (serialized, bytes): one ciphertext per type used (`FheUint8/16/32`, `FheBool`), plaintext equivalents, client key, server key (and compressed server key if available), total upload, total download.
+- Sizes (`safe_serialized_size`, bytes, measured once): one ciphertext per type used (`FheUint8/16/32`, `FheBool`), plaintext equivalents, client key, server key, compressed server key (done in the template). With the scenario: `upload` (all encrypted inputs) and `download` (all encrypted outputs).
+- Compression variant (optional, expendable): `CompactCiphertextList` + `CompactPublicKey` for the upload, `CompressedCiphertextList` (`enable_compression`) for the download. Size rows `upload_compact`, `download_compressed`; timed FHE steps `expand` (server unpacks the upload) and `compress` (server packs the outputs). Shows the trade-off: smaller, but slower again.
 - Optional: scaling with N = 24, 48, 96 for a scaling chart.
 
 **Output files** (loaded directly by Typst for the charts):
@@ -136,7 +137,7 @@ Don't decide in advance which step is worst. Look at the numbers before writing 
 | Sat 24 – Thu 29 | Rehearse (once with a listener, once alone). Prepare answers to likely questions | [ ] |
 | **Fri 30 Oct** | Morning run-through. Arrive early, test projector. Bring PDF + `.pdfpc` on USB, adapter | [ ] |
 
-**If behind:** cut scope, not rehearsal. Drop a snippet (`budget_hour` is the most expendable), then the scaling chart, then the CKKS stretch.
+**If behind:** cut scope, not rehearsal. Drop a snippet (`budget_hour` is the most expendable), then the compression variant, then the scaling chart, then the CKKS stretch.
 
 ## Likely questions (prepare answers / backup slides)
 
