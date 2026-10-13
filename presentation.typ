@@ -99,6 +99,26 @@
 #let bytes(item) = int(sizes.find(r => r.item == item).bytes)
 #let mb(item) = str(calc.round(bytes(item) / 1e6, digits: 0)) + " MB"
 #let kb(item) = str(calc.round(bytes(item) / 1e3, digits: 0)) + " KB"
+#let mb1(item) = str(calc.round(bytes(item) / 1e6, digits: 1)) + " MB"
+
+// A horizontal arrow for the pipeline diagram: what travels above, its size below.
+#let arrow(label, size, sub: none, back: false) = {
+  let head = if back { "◀" } else { "▶" }
+  stack(
+    spacing: 0.3em,
+    align(center)[#label: #size],
+    box(width: 100%, {
+      line(length: 100%, stroke: 1.5pt + navy)
+      place(if back { left + horizon } else { right + horizon }, dy: -0.05em,
+        text(fill: navy, size: 1.1em, head))
+    }),
+    if sub != none { align(center, text(size: 0.75em, fill: gray.darken(20%), sub)) },
+  )
+}
+#let party(title, body) = box(
+  width: 100%, inset: 0.8em, radius: 4pt, stroke: 1.5pt + navy,
+  align(center)[*#title* \ #text(size: 0.75em, body)],
+)
 
 #title-slide()
 
@@ -293,9 +313,50 @@
 == Smart meter
 
 #speaker-note[
-  All the snippets combined into one program: 55 B in, 3.6 MB uploaded, 1.4 MB back.
+  All the snippets combined into one program: 55 B in, 3.6 MB uploaded, 1.5 MB back.
   The output is a fixed mask, never a list: its length would leak.
+  Plain sizes: inputs 24 × u16 + u16 + u8 + u32 = 55 B; outputs 4+4+1+24+2+4+1 = 40 B.
 ]
+
+#grid(
+  columns: (1fr, 1.3fr),
+  column-gutter: 1.5em,
+  align: horizon,
+  text(size: 0.68em)[
+    ```
+    // client inputs, encrypted
+    readings[24], limit, tier, budget
+
+    // server, on ciphertexts
+    total       = sum(readings)
+    average     = total / 24
+    peak_count  = count(r > limit)
+    peak_mask   = [r > limit, each hour]
+    rate        = TARIFFS[tier]
+    bill        = total * rate / 1000
+    budget_hour = first hour over budget
+    ```
+  ],
+  {
+    set text(size: 0.7em)
+    grid(
+      columns: (1fr, 2fr, 1fr),
+      column-gutter: 0.6em,
+      row-gutter: 1.2em,
+      align: horizon,
+      grid.cell(rowspan: 3, party[Client (meter)][keys, encrypt, decrypt]),
+      arrow[server key, once][*#mb("server_key")*],
+      grid.cell(rowspan: 3, party[Server][computes, can't read]),
+      arrow([inputs, every day], sub: [55 B in plain])[*#mb1("upload")*],
+      arrow([results, every day], sub: [40 B in plain], back: true)[*#mb1("download")*],
+    )
+  },
+)
+#v(0.6em)
+#align(center, text(size: 0.85em)[
+  All the snippets in one program. The output is a *fixed-size* mask, never a list:
+  its length would leak.
+])
 
 == Timings
 
