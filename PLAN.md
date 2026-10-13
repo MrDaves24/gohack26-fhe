@@ -92,10 +92,12 @@ Privacy motivation: hourly electricity use reveals when someone is home.
 - Time every step in both versions with `Instant::now()`, plus `keygen`, `encrypt`, `decrypt` as separate rows.
 - Hook number: one `FheUint8` `gt` vs plain `u8 >`, timed as step `gt_u8` (median over many repeats for plain, it's ~1 ns).
 - Plain baseline must use `std::hint::black_box` so it isn't optimized away.
-- Repeat the full run R times (e.g. 5, fewer if too slow), report the **median**. Run the full benchmark overnight if needed.
+- Repeat the full run R times (e.g. 5, fewer if too slow), report the **median**. A 5-run benchmark takes ~4 min on 4 threads.
+- Threads: development runs use `RAYON_NUM_THREADS=4` (keeps the laptop usable); the final run uses all 10 cores. `meta.json` records `threads`.
 - Sizes (`safe_serialized_size`, bytes, measured once): one ciphertext per type used (`FheUint8/16/32`, `FheBool`), plaintext equivalents, client key, server key, compressed server key (done in the template). With the scenario: `upload` (all encrypted inputs) and `download` (all encrypted outputs).
 - Compression variant (optional, expendable): `CompactCiphertextList` + `CompactPublicKey` for the upload, `CompressedCiphertextList` (`enable_compression`) for the download. Size rows `upload_compact`, `download_compressed`; timed FHE steps `expand` (server unpacks the upload) and `compress` (server packs the outputs). Shows the trade-off: smaller, but slower again.
 - Optional: scaling with N = 24, 48, 96 for a scaling chart.
+- **IO-bound, not CPU-bound.** FHE work is dominated by moving data, not by arithmetic: each bootstrap streams tens of MB of key material that doesn't fit in the CPU cache, so memory bandwidth limits it; in a real deployment, keys (181 MB server key per client) and ciphertexts (3.6 MB upload per household-day) also go through disk and network. Here everything stays in RAM, so only the memory part shows. Test: run the benchmark with `RAYON_NUM_THREADS` = 1, 2, 4, 10 (`--runs 1`). Expected: far from linear speed-up (4 → 10 threads gave only ~1.5×). A second cause to tell apart: small radix integers have few blocks and sequential carries, so little parallel work exists. Use for the "why doesn't more hardware help?" question (backup slide), and the takeaway.
 
 **Output files** (loaded directly by Typst for the charts):
 - `bench/results/timings.csv` — `impl,step,run,nanos` (`impl` ∈ `plain`,`fhe`)
@@ -142,7 +144,7 @@ Don't decide in advance which step is worst. Look at the numbers before writing 
 ## Likely questions (prepare answers / backup slides)
 
 - Why TFHE and not CKKS/BFV?
-- How does it compare on GPU / dedicated hardware?
+- How does it compare on GPU / dedicated hardware? Why doesn't more cores help? (thread scaling test)
 - Why not MPC or a TEE instead?
 - What exactly is the Li & Micciancio attack / is TFHE affected?
 - Is it production-ready for X (AI, databases)?
