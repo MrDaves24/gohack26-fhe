@@ -172,11 +172,11 @@
 == The Holy Grail
 
 #speaker-note[
-  FHE is "the never-to-be-found Holy Grail of cryptography" (Micciancio, CACM 2010), and it now exists.
-  One encrypted comparison: 41 ms. Meanwhile your CPU does about 60 million plain ones.
-  "In theory, the Holy Grail. In practice, it's hell."
-  Quote: D. Micciancio, "A First Glimpse of Cryptography's Holy Grail", CACM 53(3), 2010
-  (research/history-and-bottlenecks.md). Gentry, STOC 2009: first FHE scheme.
+  (1:30) Open with the quote: for 30 years FHE was "the never-to-be-found Holy Grail of cryptography" (Micciancio, CACM 2010). Gentry built the first scheme in 2009. \
+  The promise: send encrypted data, the cloud computes on it without ever seeing it, you decrypt the result. Medical data, finance, AI on private data. \
+  [next] So I measured the simplest operation there is: comparing two bytes. Encrypted: about 40 ms. In that time the CPU does tens of millions of plain comparisons. \
+  [next] Thesis, say it slowly: in theory, the Holy Grail. In practice, hell. Today: what it is like to actually build something with it. \
+  Sources: Micciancio, CACM 53(3) 2010; Gentry, STOC 2009 (research/history-and-bottlenecks.md). Numbers: gt_u8 in bench/results.
 ]
 
 #[
@@ -206,7 +206,11 @@
 == About me
 
 #slide(composer: (3fr, 2fr))[
-  #speaker-note[Who's talking, and why I care about crypto.]
+  #speaker-note[
+    (0:30) One sentence: SaaS developer and consultant at Codexa, MSc HES in cybersecurity. \
+    Why this topic: applied research in cryptography; I wanted to see FHE from the developer's chair, not the paper's. \
+    Contact on the slide; happy to talk after the talk.
+  ]
   #text(size: 1.4em, weight: "regular")[Pascal Perrenoud]
 
   SaaS developer & consultant
@@ -226,10 +230,10 @@
 == Roadmap
 
 #speaker-note[
-  How we'll look at FHE:
-  (1) small snippets to see how code must be rewritten,
-  (2) one scenario to measure the overhead in time and size,
-  (3) what that means for choosing and using FHE.
+  (0:30) Not a lattice lecture; one slide of maths, then code. \
+  1. Take normal code and rewrite it for FHE, snippet by snippet: what changes and why. \
+  2. Put the snippets together in one program, a smart meter, and measure time and size. \
+  3. Zoom out: schemes, pitfalls, and when FHE is worth it.
 ]
 
 #[
@@ -307,7 +311,13 @@
 
 == Init
 
-#speaker-note[Plain: nothing. FHE: keys, and a 181 MB server key shipped to the server.]
+#speaker-note[
+  (1:00) Plain code: nothing to set up. FHE: the client generates two keys. \
+  The client key stays at home: it decrypts. The server key goes to the server once: it lets the server compute (bootstrapping) without being able to decrypt. \
+  It weighs 181 MB: 60 MB bootstrapping key, 60 MB key-switching key, and 60 MB for an encrypted-random-number key that is on by default and that we never use. \
+  Then every input is encrypted on the client. \
+  If asked why so big: backup slides "66 KB" and research/ciphertext-size.md.
+]
 
 #snippet(
   ```rust
@@ -339,8 +349,10 @@
 == Branching
 
 #speaker-note[
-  `if` on a secret doesn't compile (`FheBool` is not `bool`): compute both sides, then select.
-  First the naive version and the real rustc 1.98 error, then the fix.
+  (1:00) Step 1: the obvious code, an if on an encrypted comparison. Rust refuses: gt returns an FheBool, not a bool. Real rustc error. \
+  That is the type system protecting you: the server cannot know the result, so it cannot pick a branch. \
+  [next] Step 2: compute both sides and select. Here: always add, 1 or 0. \
+  Every select costs bootstraps. Backup: "How does select work?" (research/operations.md).
 ]
 
 #alternatives[
@@ -382,8 +394,10 @@
 == Loops
 
 #speaker-note[
-  No early exit, because the number of iterations would leak:
-  loop the maximum, or rethink the algorithm (`budget_hour`).
+  (1:00) Plain: return as soon as the budget is exceeded. \
+  In FHE the loop length would leak the answer, through timing alone. So always run all 24 hours. \
+  Here we go further and rethink the algorithm: the running sum only grows, so the answer is the number of hours still within budget. A count, no early exit, no flag. \
+  Lesson: FHE changes algorithms, not just syntax. Also the most expensive step: about 13 s.
 ]
 
 #snippet(
@@ -395,7 +409,9 @@
 == Secret index
 
 #speaker-note[
-  `TARIFFS[tier]` would leak through memory access: visit every slot. O(1) becomes O(n).
+  (1:00) TARIFFS[tier]: the memory address depends on the secret, and memory access patterns leak (think cache side channels). \
+  FHE: compare tier with every index, keep the matching price, add them up. O(1) becomes O(n). \
+  Fine for 4 tariffs (cheapest step, under a second). For a big table, this is why private information retrieval is a research field of its own (Apple uses it).
 ]
 
 #snippet(
@@ -406,7 +422,11 @@
 
 == Division
 
-#speaker-note[Divide by a public 24: 2.1 s. By an encrypted 24: 15.7 s. Same result.]
+#speaker-note[
+  (1:00) average = total / 24. Same code, same result, two costs. \
+  Divide by the public 24: about 2 s. Divide by an encrypted 24: about 15 s, seven times more. \
+  Lesson: keep public what can be public. Every value you encrypt makes everything it touches more expensive.
+]
 
 #snippet(
   [#plain("average") #plain("average_secret_n")],
@@ -421,7 +441,12 @@
 
 == Bit width
 
-#speaker-note[Choose widths up front: 1 byte becomes 66 KB, and every bit costs time.]
+#speaker-note[
+  (1:00) A typical day is about 20 000 Wh, but the worst case is 24 × 5000 = 120 000 Wh, beyond u16's 65 535: the sum would wrap silently, so we widen to u32. \
+  In plain Rust widening is free. In FHE every bit costs: 66 KB per encrypted byte, and time grows with the number of blocks. \
+  So choose widths up front, as small as possible, and never widen "just in case". \
+  If asked why 66 KB: backup slides "66 KB" and "How is one block encrypted?".
+]
 
 #snippet(
   plain("total", hl: (2, 4)),
@@ -444,9 +469,11 @@
 == Smart meter
 
 #speaker-note[
-  All the snippets combined into one program: 55 B in, 3.6 MB uploaded, 1.5 MB back.
-  The output is a fixed mask, never a list: its length would leak.
-  Plain sizes: inputs 24 × u16 + u16 + u8 + u32 = 55 B; outputs 4+4+1+24+2+4+1 = 40 B.
+  (2:00) The scenario: a smart meter sends hourly readings. They reveal when you are home. We want the bill, the peaks and the budget, without the provider seeing the readings. \
+  Seven steps, each one is a snippet you just saw. \
+  Sizes: the 181 MB server key once; then every day 3.6 MB up instead of 55 bytes, and 1.5 MB back instead of 40. \
+  The output is a fixed mask of 24 flags: a list of peak hours would leak how many there are by its length. \
+  The code is on GitHub; plain and FHE outputs are checked equal on every run.
 ]
 
 #grid(
@@ -491,7 +518,13 @@
 
 == Timings
 
-#speaker-note[Every step is 10⁹× slower; a day takes 30 s against 18 ns.]
+#speaker-note[
+  (2:00) Careful, log scale: each gridline is a factor 1000. \
+  Plain steps take nanoseconds, FHE steps take seconds: about 10^9 for every step. A whole day: about 30 s against about 20 ns. \
+  Setup: MacBook Air M4, fanless, 4 threads, sustained load (it throttles about 20 %). \
+  Client side is cheap: keygen 0.5 s, encrypt 11 ms, decrypt under 0.1 ms. The whole cost is on the server. \
+  If asked about more cores: backup "Why don't more cores help?".
+]
 
 #[
 #set text(size: 0.6em)
@@ -519,7 +552,12 @@
 
 == Where the time goes
 
-#speaker-note[`budget_hour` and `total`, the two running sums, are about 60% of the time: sums are TFHE's weak spot.]
+#speaker-note[
+  (1:30) Linear scale now, FHE only. \
+  The two running sums, budget_hour and total, take about 60 % of the time. \
+  Surprise: the secret index, the O(n) lookup, is the cheapest; with 4 entries O(n) is nothing. \
+  Sums are slow because every addition carries across 16 blocks of 2 bits, and every carry is a bootstrap. Another scheme would draw another picture: next slide.
+]
 
 #[
 #set text(size: 0.8em)
@@ -550,8 +588,11 @@
 == Schemes & deployments
 
 #speaker-note[
-  The scheme decides what's cheap: batching makes sums nearly free.
-  Real deployments are small, targeted lookups.
+  (2:00) There is no best scheme, only the one that hurts least for your program. \
+  TFHE: any function of a small value, so comparisons and lookups are fine; sums and wide integers hurt. \
+  BFV and BGV: thousands of values per ciphertext, one addition adds them all; comparisons hurt. Our 24 readings fit in one ciphertext. CKKS: same on approximate reals, the ML scheme. \
+  Who uses it: Apple (BFV, encrypted lookups for Caller ID, Photos, Mail), Microsoft Edge (leaked-password match), Zama (TFHE on Ethereum, about 20 transactions/s on CPU). \
+  Apple and Microsoft do not even bootstrap: one shallow computation, plus a lot of non-FHE plumbing (relays, sharding, differential privacy). \
   Sources: research/schemes.md, research/deployments.md.
 ]
 
@@ -591,9 +632,11 @@
 == Weird pitfalls
 
 #speaker-note[
-  No integrity, and shared decryptions can leak the key. The fix depends on the scheme.
-  Li & Micciancio, EUROCRYPT 2021 (ePrint 2020/1533). Exact schemes: CRYPTO 2024 (ePrint 2024/116),
-  CCS 2024 (ePrint 2024/127). TFHE-rs: 2^-40 in 0.8, 2^-128 since 1.0. Sources: research/attacks.md.
+  (1:00) Three things people don't expect. \
+  1. No integrity: ciphertexts are malleable, that is how the server computes. It can also return garbage and you cannot tell. \
+  2. Sharing a decrypted result can leak the key: CKKS in 2021 (Li & Micciancio), exact schemes including TFHE in 2024, through rare decryption failures. \
+  3. The fix depends on the scheme: TFHE-rs made failures astronomically rare (2^-128 since 1.0, it was 2^-40), nearly free. CKKS must add noise, which is costly, and done wrong it is worse than nothing (Guo et al. 2024: key from one decryption). \
+  Backup: Li & Micciancio. Sources: research/attacks.md.
 ]
 
 #[
@@ -625,9 +668,11 @@
 == When is FHE worth it?
 
 #speaker-note[
-  FHE vs TEE vs MPC vs ZK. "In theory the Holy Grail, in practice hell." QR code to the repo.
-  Each option trades a trust assumption for a cost; FHE trusts nothing but the math, so it costs most.
-  Real systems mix them: Zama = FHE + ZK (inputs) + threshold MPC (decryption) in AWS enclaves.
+  (1:30) Every option trades a trust assumption for a cost. \
+  TEE: almost free, but you trust the chip vendor, and physical attacks keep breaking them (TEE.fail 2026, under 1000 dollars of hardware). MPC: you trust that the parties don't collude; the cost is network. ZK: proves a computation, but the prover holds the data. \
+  FHE: trust only the math. Price: about 10^9, and no integrity. \
+  So FHE is worth it when nobody can be trusted, the computation is small and fixed, and seconds are fine. Real systems mix them: Zama is FHE plus ZK plus MPC plus TEE. \
+  Close with the thesis line. Point at the QR code. \
   Sources: research/alternatives.md.
 ]
 
@@ -675,11 +720,129 @@
 
 == Li & Micciancio
 
+#speaker-note[
+  CKKS decryption returns m + e: the error travels with the result. Each shared result gives a linear equation in the key; enough of them give the key. \
+  Exact schemes are exact only if decryption never fails; the 2024 attacks provoke and observe the rare failures. \
+  Sources: ePrint 2020/1533, 2024/116, 2024/127; Guo et al. USENIX Security 2024; TFHE-rs docs. research/attacks.md.
+]
+
+#[
+#set text(size: 0.7em)
+#grid(
+  columns: (1fr, 1fr),
+  column-gutter: 2em,
+  align: top,
+  [
+    *The attack (CKKS, EUROCRYPT 2021)*
+    - CKKS decrypts to $m + e$: the noise $e$ comes out *with* the result.
+    - The client shares the decrypted result (a statistic, a prediction).
+    - Each shared result is a linear equation in the secret key $s$. Enough of them: $s$ by linear algebra.
+    - Worked against SEAL, HElib, PALISADE, HEAAN. Not a bug: IND-CPA does not cover it, so they defined *IND-CPA#super(typographic: false)[D]*.
+  ],
+  [
+    *Since then*
+    - 2024: *exact* schemes too (BFV, BGV, TFHE), through rare *decryption failures*: key recovery in under an hour on a laptop against several libraries (CRYPTO 2024, CCS 2024).
+    - Fix for TFHE: failures astronomically rare, $2^(-128)$ by default since TFHE-rs 1.0 (it was $2^(-40)$).
+    - Fix for CKKS: *noise flooding* before decrypting: bigger parameters, slower.
+    - Sized for the average case instead of the worst: key from *one* decryption (USENIX Security 2024).
+  ],
+)
+]
+
 == Scheme comparison
+
+#speaker-note[
+  Numbers from the TFHE-rs docs (192-core server, latest docs, not pinned to 1.8.1) and the SEAL manual. \
+  Krüger et al. 2025 (ePrint 2025/1460): CKKS faster on most operations, TFHE faster on comparisons. \
+  Sources: research/schemes.md.
+]
+
+#[
+#set text(size: 0.62em)
+#table(
+  columns: (auto, 1fr, 1fr, 1fr),
+  stroke: (x, y) => if y > 0 { (top: 0.5pt + gray.lighten(40%)) },
+  inset: (x: 0.4em, y: 0.55em),
+  table.header[][*Data*][*Strengths*][*Weaknesses*],
+  [*TFHE* \ 2016], [one small integer per ciphertext; TFHE-rs chains 2-bit blocks], [any function through a lookup table (programmable bootstrap); unlimited depth], [one value per ciphertext; every carry and non-linear step is a bootstrap; cost explodes with bits per block (2 bits: 4.55 ms, 8 bits: 773 ms)],
+  [*BFV / BGV* \ 2012], [exact integers mod $t$, thousands of slots (8192 at $N = 8192$)], [one operation acts on all slots; cheap additions], [moving values between slots costs a key switch; comparisons need deep circuits; values must not wrap mod $t$],
+  [*CKKS* \ 2017], [approximate reals, $N\/2$ slots], [fast vector arithmetic on reals; encrypted ML inference], [results are approximate; comparison = polynomial approximation of the sign; expensive bootstrapping],
+)
+#v(0.5em)
+#align(center)[
+  2025 study: CKKS faster on most operations, TFHE faster on comparisons. Libraries now *switch schemes* mid-computation (OpenFHE: CKKS ↔ FHEW).
+]
+]
 
 == Why not MPC or a TEE?
 
+#speaker-note[
+  TEE overhead: under 7 % for LLM inference on H100 (arXiv 2409.03992); up to 60 % for heavy network I/O on confidential VMs (SIGMETRICS 2025). \
+  Intel and AMD consider physical attacks out of scope (Battering RAM). MPC: "the bottleneck is communication" (Heath & Kolesnikov, CRYPTO 2020). \
+  Sources: research/alternatives.md.
+]
+
+#[
+#set text(size: 0.7em)
+#grid(
+  columns: (1fr, 1fr),
+  column-gutter: 2em,
+  align: top,
+  [
+    *TEE* (SGX, TDX, SEV-SNP, GPU confidential computing)
+    - Data is in *plaintext inside the chip*; the hardware is the boundary.
+    - Nearly free for compute (under 7 % on an H100), more for I/O.
+    - You trust the vendor and its attestation keys, and nobody with physical access:
+      BadRAM (2025, about \$10), Battering RAM and TEE.fail (2026, under \$1000).
+    - Used by Signal (contact discovery), Signal SVR3 across three TEE vendors.
+  ],
+  [
+    *MPC* (secure multi-party computation)
+    - The data is split between several servers; no single one sees it.
+    - You trust that they *don't collude*: you need two organisations.
+    - The cost is network traffic and round trips, not computation.
+    - Used for the Danish sugar beet auction (2008), COVID exposure statistics (Prio), Firefox telemetry.
+  ],
+)
+#v(0.6em)
+#align(center)[
+  Choose FHE when there is *one* server and you trust *neither* its hardware *nor* a second party.
+]
+]
+
 == Why don't more cores help?
+
+#speaker-note[
+  Thread test, 13 Oct, one run per thread count, laptop warming up (noisy). \
+  The memory-bound claim comes from accelerator papers on CKKS-style bootstrapping (de Castro et al., arXiv 2112.06396), not from our CPU measurements. \
+  Sources: PLAN.md (benchmark), research/history-and-bottlenecks.md.
+]
+
+#[
+#set text(size: 0.72em)
+#grid(
+  columns: (auto, 1fr),
+  column-gutter: 2.5em,
+  align: horizon,
+  table(
+    columns: 3,
+    stroke: (x, y) => if y > 0 { (top: 0.5pt + gray.lighten(40%)) },
+    align: (right, right, right),
+    table.header[*Threads*][*Day*][*Speed-up*],
+    [1], [84 s], [1×],
+    [2], [50 s], [1.7×],
+    [4], [44 s], [1.9×],
+    [10], [36 s], [*2.3×*],
+  ),
+  [
+    - *Little parallel work*: an integer is a few 2-bit blocks, and carries go from one block to the next, in order. The 32-bit multiplication scales best (3.7×), an 8-bit comparison least (1.9×).
+    - *Not all cores are equal*: the M4 has 4 performance and 6 efficiency cores; threads 5 to 10 are the slow ones.
+    - *Memory*: each bootstrap streams tens of MB of key material; accelerator papers find bootstrapping "heavily bound by the main memory bandwidth" (for CKKS-style schemes).
+  ],
+)
+#v(0.6em)
+#align(center)[The big gains are in GPUs and dedicated chips, not in more CPU cores.]
+]
 
 == Why is an encrypted byte 66 KB?
 
