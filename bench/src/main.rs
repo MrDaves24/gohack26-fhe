@@ -21,7 +21,7 @@ struct Args {
     /// Number of full runs (the median goes on the slides). 1 = quick mode.
     #[arg(long, default_value_t = 5)]
     runs: usize,
-    /// Directory for timings.csv and meta.json.
+    /// Directory for timings.csv, sizes.csv and meta.json.
     #[arg(long, default_value = "results")]
     out: PathBuf,
 }
@@ -71,6 +71,7 @@ fn main() -> std::io::Result<()> {
         b: rng.random(),
     };
 
+    let mut sizes = vec![];
     let mut t = Timings {
         run: 0,
         rows: vec![],
@@ -80,6 +81,9 @@ fn main() -> std::io::Result<()> {
         let expected = t.plain("gt_u8", || plain::gt_u8(black_box(&inputs)));
 
         let (ck, sk) = t.fhe("keygen", fhe::keygen);
+        if run == 0 {
+            sizes = fhe::sizes(&ck, &sk);
+        }
         tfhe::set_server_key(sk);
         let enc = t.fhe("encrypt", || fhe::encrypt(&inputs, &ck));
         let enc_out = t.fhe("gt_u8", || fhe::gt_u8(&enc));
@@ -95,6 +99,11 @@ fn main() -> std::io::Result<()> {
         writeln!(csv, "{imp},{step},{run},{nanos}").unwrap();
     }
     std::fs::write(args.out.join("timings.csv"), csv)?;
+    let mut csv = String::from("item,bytes\n");
+    for (item, bytes) in &sizes {
+        writeln!(csv, "{item},{bytes}").unwrap();
+    }
+    std::fs::write(args.out.join("sizes.csv"), csv)?;
     std::fs::write(args.out.join("meta.json"), meta(args.runs))?;
     print_medians(&t.rows);
     Ok(())
