@@ -259,13 +259,14 @@
 
 = FHE in one slide
 
-== Refresher
+== How FHE works
 
 #speaker-note[
-  Compute on ciphertexts, noise grows with each operation, bootstrapping resets it.
-  TFHE has two moves: cheap linear algebra, and a lookup table that also resets the noise.
-  Everything else (+, >, select, ×) is built from those (research/operations.md).
-  That's all the maths you need.
+  (1:00) One equation: decrypting the result of an operation on ciphertexts gives the result on the plaintexts. The server never needs the key to read. \
+  Every ciphertext carries noise, that is what makes it secure. Each operation adds noise; past a limit, decryption gives garbage. \
+  Bootstrapping resets the noise, and in TFHE it applies a lookup table at the same time. So TFHE has two moves: cheap linear algebra, and a lookup that also cleans. \
+  The server bootstraps with the server key: the secret key, encrypted under itself. That is why it must be shipped, and why it is big (next section). \
+  Sources: research/operations.md, research/ciphertext-size.md.
 ]
 
 #[
@@ -283,11 +284,9 @@
   ([$plus.o$], 38%, c-plain),
   ([$times.o$], 88%, c-plain),
   ([bootstrap], 15%, c-fhe),
-  ([$plus.o$], 25%, c-plain),
-  ([$times.o$], 55%, c-plain),
 )
 #let h = 5em
-#align(center, block(width: 75%, {
+#align(center, block(width: 60%, {
   place(top, dy: -0.1em, line(length: 100%, stroke: (paint: red.darken(20%), dash: "dashed", thickness: 1pt)))
   place(top + right, dy: -1.2em, text(size: 0.8em, fill: red.darken(20%))[too much noise: decryption fails])
   grid(
@@ -303,8 +302,48 @@
 #v(0.6em)
 #align(center)[
   TFHE has two moves: *cheap linear algebra*, and a *lookup table that also resets the noise*
-  (bootstrapping). Everything else is built from those.
+  (bootstrapping). Everything else is built from those. \
+  The server bootstraps with the *server key*: the secret key, encrypted under itself.
 ]
+]
+
+== Integers in TFHE
+
+#speaker-note[
+  (1:00) A ciphertext only holds a few bits: TFHE-rs splits an integer into blocks of 2 bits, each its own ciphertext. An FheUint8 is 4 blocks, an FheUint32 is 16. \
+  Adding blocks is cheap, but the carries must move from block to block, and each carry is a bootstrap. A comparison is a lookup per pair of blocks, then lookups to combine. \
+  Mental model for the rest of the talk: cost ≈ number of bootstraps ≈ number of blocks. More bits, more blocks, slower and bigger. \
+  Our gt_u8: about 7 bootstraps, about 40 ms. \
+  Sources: research/operations.md (tfhe 1.8.1 source), research/ciphertext-size.md.
+]
+
+#[
+#set text(size: 0.8em)
+`FheUint8` = 4 ciphertexts of *2 bits* each:
+#v(0.3em)
+#align(center, block(width: 80%, stack(dir: ltr, spacing: 3pt,
+  ..range(4).map(i => block-box(24.5%, cyan.lighten(60%))[2 bits]))))
+#v(0.8em)
+#grid(
+  columns: (1fr, 1fr),
+  column-gutter: 2em,
+  align: top,
+  [
+    *$a + b$*
+    - add block by block: cheap
+    - move each *carry* to the next block: *a bootstrap each*
+  ],
+  [
+    *$a > b$*
+    - compare each pair of blocks: a lookup
+    - combine the results: more lookups
+  ],
+)
+#v(0.8em)
+#align(center, text(size: 1.2em)[
+  Cost ≈ number of bootstraps ≈ number of blocks. \
+  #text(size: 0.8em)[`u8`: 4 blocks · `u16`: 8 · `u32`: 16]
+])
 ]
 
 = Rewriting code
@@ -338,13 +377,6 @@
   ```,
   [Keys first: the server key weighs *#mb("server_key")*, and the server needs it to compute.],
 )
-#place(bottom, dy: -0.9em, text(size: 0.5em, fill: gray.darken(20%))[
-  The server key is the secret key encrypted under itself: it lets the server reset the noise
-  (bootstrapping) without being able to decrypt. 181 MB = bootstrapping key 60 MB
-  (918 × 4 × 2048 values) + key-switching key 60 MB (2048 × 4 × 919 values) + random-number
-  (OPRF) key 60 MB, on by default. All 64-bit values: the size follows the security and
-  precision parameters (TFHE-rs 1.8.1 defaults).
-])
 
 == Branching
 
