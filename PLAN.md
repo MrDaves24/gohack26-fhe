@@ -22,24 +22,37 @@ Lands at the end of the hook, repeated on the takeaway slide. Every slide must s
 
 ## Talk structure (~20 min)
 
-| # | Section | Time | Content |
-|---|---|---|---|
-| 1 | Title | — | |
-| 2 | Hook | 1:30 | Global, not tied to the scenario. (a) The promise: send encrypted data, the cloud computes without the key, you decrypt the result. "The never-to-be-found Holy Grail of cryptography" (Micciancio, CACM 2010 — not IBM). Optional: Schneier 2009, Gentry's estimate of an encrypted Google search: "about a trillion" times more computing — next to our ×10⁹. (b) The cost of one op, measured on my laptop: `a > b` on two 8-bit ints, ~0.6 ns plain vs ~37 ms TFHE-rs (×10⁷-ish), shown big, framed as throughput: "one encrypted comparison: 37 ms. Meanwhile your CPU does ~60 million plain ones." (c) Thesis line: "In practice, it's hell. Let's see what it's like to build something." |
-| 3 | About me | 0:30 | One quick slide, so people know who is speaking: name, what I do in two words, short background, Codexa (logo), website, email. Details to fill in (Pascal). |
-| 4 | Roadmap | 0:30 | One visual slide (not a bullet list) |
-| 5 | Refresher | 1:30 | One slide: homomorphism equation, noise grows, bootstrapping resets it. No lattices. |
-| 6 | Snippet: **init** | 1:00 | Normal: nothing. FHE: params, key generation, ship server key to the server. Mention key size here. |
-| 7–11 | Snippets ×5 | 5:00 | One slide per catalogue item, normal ↔ FHE side by side (see catalogue). Order for building surprise; vary layout (one slide = the Rust compile error). |
-| 12 | Scenario + pipeline | 2:00 | "Putting it all together": smart meter scenario in pseudo-code (named steps), pipeline diagram client ↔ server, plain FHE sizes on the arrows (server key once, daily upload, daily download), plus one line: "with TFHE-rs compression: X MB, at the cost of Y ms server time". Code is NOT shown (it's on GitHub). |
-| 13–14 | Benchmark | 3:30 | Per-step timing chart: **plain vs FHE, log scale** (same step names as the pseudo-code; plain is the reference that makes the FHE numbers mean something) + stacked share ("X% of the time is `budget_hour`"; look at the final numbers). One plain comparison, as throughput for the whole `day`: "1 household-day: ~30 s encrypted. In those 30 s, plain Rust computes ~1 billion household-days." Hardware noted (4P + 6E, fanless). Pays off the hook's one-op number. |
-| 15 | Schemes & deployments | 2:00 | "No best scheme, only the one that hurts least": TFHE vs BFV/BGV vs CKKS for *this* program. Real deployments = small targeted lookups: "one encrypted question, one shallow circuit, plus a lot of non-HE plumbing" (`research/deployments.md`). |
-| 16 | Weird pitfalls | 1:00 | One slide: no integrity; revealing decryptions can leak the key (Li & Micciancio, one line). Mitigation **depends on the scheme**: almost free for TFHE since 2025 (2^-128 failure probability by default, Zama's drift technique), expensive for CKKS (noise flooding, bigger params), and worse than nothing if the flooding is sized for the average case (Guo et al., USENIX Sec 2024). Sources: `research/attacks.md`. No side channels. |
-| 17 | Takeaway | 1:30 | When FHE is worth the cost vs TEE / MPC / ZK. Thesis line again. QR code → GitHub repo. |
-| 18 | Thanks | — | Focus slide: "Thanks for your attention" / "Any question?" |
-| — | Backup | — | After Thanks: Li & Micciancio details, scheme comparison details, (GPU / CKKS numbers if done), "why not MPC?" |
+Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide is its speaker note in `presentation.typ`. The **Roadmap** is a normal slide (no generated TOC): it explains how we look at FHE — ① snippets to see how code must be rewritten, ② one scenario to measure the overhead in time and size, ③ what that means for choosing and using FHE — ideally as three boxes, not bullets.
 
-Total: 20:00. Snippets are ~1 min each; if the first run-through is long, cut a snippet first.
+| # | Slide | Time | Content |
+|---|---|---|---|
+| | **Introduction** | | |
+| 1 | Title | — | |
+| 2 | Hook | 1:30 | Global, not tied to the scenario. (a) The promise: send encrypted data, the cloud computes without the key, you decrypt the result. "The never-to-be-found Holy Grail of cryptography" (Micciancio, CACM 2010 — not IBM). Optional: Schneier 2009, Gentry's estimate of an encrypted Google search: "about a trillion" times more computing — next to our ×10⁹. (b) One encrypted comparison: ~41 ms; meanwhile the CPU does ~60 million plain ones (`gt_u8`). (c) Thesis line: "In practice, it's hell. Let's see what it's like to build something." |
+| 3 | About me | 0:30 | Name, SaaS developer & consultant, MSc HES in cybersecurity, applied research in cryptography, Codexa logo, codexa.swiss, pascal@codexa.swiss. Done. |
+| 4 | Roadmap | 0:30 | ① rewrites → ② overhead → ③ real world, as a visual. |
+| | **FHE in one slide** | | |
+| 5 | Refresher | 1:30 | Homomorphism equation, noise grows, bootstrapping resets it. No lattices. |
+| | **① Rewriting code** | | |
+| 6 | Init | 1:00 | Plain: nothing. FHE: params, keygen, ship the 181 MB server key to the server. |
+| 7 | Branching | 1:00 | `if` on a secret doesn't compile (`FheBool` is not `bool`): show the Rust compile error, then compute both sides and select. |
+| 8 | Loops | 1:00 | No early exit (iteration count leaks): loop the maximum, or rethink the algorithm (`budget_hour` counts hours within budget). |
+| 9 | Secret index | 1:00 | `TARIFFS[tier]` leaks through memory access: visit every slot, O(1) → O(n). |
+| 10 | Division | 1:00 | Public 24: 2.1 s vs encrypted 24: 15.7 s (`average` vs `average_secret_n`). |
+| 11 | Bit width | 1:00 | Choose widths up front: 1 byte → 66 KB; summing in u16 would wrap; every bit costs time. |
+| | **② The overhead** | | |
+| 12 | Smart meter | 2:00 | Scenario in pseudo-code (named steps), pipeline diagram client ↔ server: 55 B in, 3.6 MB up, 1.4 MB down, 181 MB server key once; plus one line on compression if measured. One line: the output is a fixed mask, never a list (the cut "variable output" snippet). Code NOT shown (it's on GitHub). |
+| 13 | Timings | 2:00 | Per-step chart, plain vs FHE, log scale; whole day ~30 s vs ~18 ns. Hardware: M4, 4P + 6E cores, fanless, sustained load. |
+| 14 | Where the time goes | 1:30 | Stacked share: `budget_hour` + `total` ≈ 63% (check on final numbers). Sums are TFHE's weak spot → leads to ③. |
+| | **③ FHE in the real world** | | |
+| 15 | Schemes & deployments | 2:00 | "No best scheme, only the one that hurts least": batching makes sums nearly free. Real deployments = small targeted lookups: "one encrypted question, one shallow circuit, plus a lot of non-HE plumbing" (`research/deployments.md`). |
+| 16 | Weird pitfalls | 1:00 | No integrity; shared decryptions can leak the key (Li & Micciancio). Mitigation **depends on the scheme**: almost free for TFHE since 2025, expensive for CKKS, worse than nothing if sized for the average case (`research/attacks.md`). No side channels. |
+| | **Takeaway** | | |
+| 17 | When is FHE worth it? | 1:30 | FHE vs TEE / MPC / ZK. Thesis line again. QR code → GitHub repo. |
+| 18 | Thanks | — | Focus slide: "Thanks for your attention" / "Any question?" |
+| — | Backup | — | Li & Micciancio · Scheme comparison · Why not MPC or a TEE? · Why don't more cores help? |
+
+Total: 20:00. If the first run-through is long, cut a snippet first.
 
 ## Snippet catalogue
 
@@ -56,7 +69,7 @@ Each snippet slide: normal Rust left, TFHE-rs right, short caption naming the wo
 | variable output | return filtered `Vec` | output length leaks data | fixed-size output + mask, or a count |
 | debugging | `println!` | intermediate values are invisible | needs the client key (server never has it) |
 
-Keep **5–6** of the non-init items on slides (cut list: debugging, then division can merge into bit width). The rest can be a one-line mention.
+On slides (decided 13 Oct): branch, loop, secret index, division, bit width. Variable output is cut to one line on the Smart meter slide; debugging is a spoken mention at most.
 
 ## Scenario: smart meter
 
