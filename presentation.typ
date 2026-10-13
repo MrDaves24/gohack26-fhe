@@ -384,3 +384,54 @@ One block = one LWE ciphertext of 64-bit values:
   ],
 )
 ]
+
+== How is one block encrypted?
+
+#speaker-note[
+  LWE (Regev 2005). Mask: random, independent of the message, so it can be a seed.
+  Body: message under a one-time pad ⟨a, s⟩ that needs the key.
+  Without the noise, 2048 ciphertexts give the key by Gaussian elimination.
+  Adding ciphertexts adds the noises: near Δ/2 decryption fails, bootstrapping resets it.
+  Δ = 2^59 checked in TFHE-rs 1.8.1 (shortint/encoding.rs). Sources: research/ciphertext-size.md.
+]
+
+#[
+#set text(size: 0.8em)
+#grid(
+  columns: (1fr, 1fr),
+  column-gutter: 2em,
+  align: top,
+  [
+    *Encrypt* #h(0.5em) #text(fill: gray.darken(20%))[(client, secret key $s$ = 2048 bits)]
+    + mask $a$: 2048 random 64-bit values
+    + noise $e$: small and random
+    + body: $b = ⟨a, s⟩ + Delta dot m + e quad (mod 2^64)$
+
+    Ciphertext $= (a, b)$
+  ],
+  [
+    *Decrypt*
+    $ b - ⟨a, s⟩ = Delta dot m + e $
+    Round to the nearest multiple of $Delta$: the noise goes, $m$ stays.
+    Works while $|e| < Delta \/ 2$.
+  ],
+)
+#v(0.6em)
+The 64-bit word, $Delta = 2^59$:
+#v(0.2em)
+#stack(
+  dir: ltr,
+  spacing: 2pt,
+  block-box(6%, gray.lighten(40%))[pad],
+  block-box(10%, cyan.lighten(40%))[carry],
+  block-box(10%, cyan)[*m*],
+  block-box(72%, gray.lighten(70%))[room for the noise $e$ (59 bits)],
+)
+#v(0.6em)
+#text(size: 0.9em)[
+  - The mask is pure randomness, independent of $m$: it can be sent as a *seed*.
+  - The body is $m$ under a one-time pad $⟨a, s⟩$ that needs the key.
+  - The noise is what makes it hard: without $e$, 2048 ciphertexts give $s$ by Gaussian
+    elimination. With it, this is the *LWE* problem (Regev 2005).
+]
+]
