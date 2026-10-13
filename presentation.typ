@@ -1,8 +1,11 @@
 #import "@preview/touying:0.8.0": *
 #import themes.metropolis: *
 
-// Blue instead of Metropolis orange.
-#let blue = rgb("#1f6feb")
+// Codexa brand colors, sampled from the press logo (codexa.swiss/fr/press).
+#let navy = rgb("#012473")
+#let cyan = rgb("#51C2F8")
+// Body text: the site's "coal".
+#let coal = rgb("#222222")
 
 // Progress bar along the bottom edge of the gray header, full page width. The header
 // cell has a 1em inset, so the bar is pushed back out to the cell's edges.
@@ -27,7 +30,15 @@
     date: datetime(year: 2026, month: 10, day: 30),
     institution: [GOHack26],
   ),
-  config-colors(primary: blue, primary-light: blue.lighten(75%)),
+  config-colors(
+    primary: cyan,
+    primary-light: cyan.lighten(75%),
+    secondary: navy,
+    neutral-dark: navy,
+    neutral-darkest: coal,
+  ),
+  // Cyan text is too pale on a white background: alerts are navy and bold.
+  config-methods(alert: (self: none, it) => text(fill: navy, weight: "bold", it)),
   config-common(new-section-slide-fn: none),
 )
 
