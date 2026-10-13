@@ -175,6 +175,13 @@
   ```,
   [Keys first: the server key weighs *#mb("server_key")*, and the server needs it to compute.],
 )
+#place(bottom, dy: -0.9em, text(size: 0.5em, fill: gray.darken(20%))[
+  The server key is the secret key encrypted under itself: it lets the server reset the noise
+  (bootstrapping) without being able to decrypt. 181 MB = bootstrapping key 60 MB
+  (918 × 4 × 2048 values) + key-switching key 60 MB (2048 × 4 × 919 values) + random-number
+  (OPRF) key 60 MB, on by default. All 64-bit values: the size follows the security and
+  precision parameters (TFHE-rs 1.8.1 defaults).
+])
 
 == Branching
 

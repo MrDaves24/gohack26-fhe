@@ -77,3 +77,32 @@ TFHE blocks are LWE ciphertexts ("Learning With Errors",
 - **Why only 2 bits per block**: bootstrapping evaluates a lookup table whose cost grows
   with the bits per block (4.55 ms at 2 bits vs 773 ms at 8 bits, see
   `research/schemes.md`).
+
+## Why the server key is 181 MB
+
+The server needs it to compute: it holds the secret key encrypted under itself, so the
+server can **bootstrap** (reset the noise, evaluate a lookup table) and **key-switch**
+(move a ciphertext from the big key to the small key before bootstrapping) without
+being able to decrypt.
+
+Measured 13 Oct 2026 with `bincode::serialized_size` on the parts returned by
+`ServerKey::into_raw_parts` ([keys/server.rs](https://docs.rs/crate/tfhe/1.8.1/source/src/high_level_api/keys/server.rs)),
+default config, tfhe 1.8.1 (scratch program, not in the repo):
+
+| Part | Measured | From the parameters |
+|---|---|---|
+| Bootstrapping key | — | 918 × (k+1)² × level × N = 918 × 4 × 1 × 2048 u64 = 60.2 MB |
+| Key-switching key | — | 2048 × ks_level × (918 + 1) = 2048 × 4 × 919 u64 = 60.2 MB |
+| Integer server key (both above) | 120.42 MB | 120.4 MB |
+| OPRF key (encrypted random numbers) | 60.19 MB | a second bootstrapping key |
+| **Total** | **180.61 MB** | |
+
+- Parameters (`lwe_dimension 918`, `glwe_dimension k = 1`, `polynomial_size N = 2048`,
+  `pbs_level 1`, `ks_level 4`): see [v1_4 ks_pbs.rs](https://docs.rs/crate/tfhe/1.8.1/source/src/shortint/parameters/v1_4/classic/tuniform/p_fail_2_minus_128/ks_pbs.rs).
+- What makes it grow: the LWE dimensions (security), the polynomial size (precision per
+  block, i.e. bits per block) and the decomposition levels (noise control). E.g. the
+  3-bit-message set in the same file uses N = 8192 and pbs_level 2.
+- The OPRF key is on by default ("Whether to use a dedicated key for the OPRF (default)
+  or not", [keys/inner.rs](https://docs.rs/crate/tfhe/1.8.1/source/src/high_level_api/keys/inner.rs)); we never use encrypted
+  random numbers. `ConfigBuilder::use_dedicated_oprf_key(false)`
+  ([config.rs](https://docs.rs/crate/tfhe/1.8.1/source/src/high_level_api/config.rs)) should drop it (not measured).
