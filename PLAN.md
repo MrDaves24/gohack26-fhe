@@ -50,7 +50,7 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | | **Takeaway** | | |
 | 17 | When is FHE worth it? | 1:30 | FHE vs TEE / MPC / ZK. Thesis line again. QR code → GitHub repo. |
 | 18 | Thanks | — | Focus slide: "Thanks for your attention" / "Any question?" |
-| — | Backup | — | Li & Micciancio · Scheme comparison · Why not MPC or a TEE? · Why don't more cores help? · Why is an encrypted byte 66 KB? · How is one block encrypted? (LWE) |
+| — | Backup | — | Li & Micciancio · Scheme comparison · Why not MPC or a TEE? · Why don't more cores help? · Why is an encrypted byte 66 KB? · How is one block encrypted? (LWE) · How does select work? |
 
 Total: 20:00. If the first run-through is long, cut a snippet first.
 

@@ -442,3 +442,48 @@ The 64-bit word, $Delta = 2^59$:
     elimination. With it, this is the *LWE* problem (Regev 2005).
 ]
 ]
+
+== How does select work?
+
+#speaker-note[
+  select(c, a, b) = c·a + (1−c)·b: both sides always computed, result is a fresh ciphertext.
+  TFHE-rs packs c next to each 2-bit block (x = 2·block + c, fits in the 4-bit block thanks
+  to the carry space) and bootstraps with a lookup table "block if c else 0".
+  ~3 bootstraps per block with two ciphertexts; one bootstrap of c when both sides are plain
+  values (our peak_count). Sources: research/select.md (tfhe 1.8.1, radix_parallel/cmux.rs).
+]
+
+#[
+#set text(size: 0.8em)
+#grid(
+  columns: (1fr, 1fr),
+  column-gutter: 2em,
+  align: top,
+  [
+    *The idea*
+    $ "select"(c, a, b) = c dot a + (1 - c) dot b $
+    - *Both* $a$ and $b$ are always computed.
+    - The result is a *fresh* ciphertext: nobody can tell which side it came from.
+  ],
+  [
+    *In TFHE-rs*, for each 2-bit block:
+    + pack: $x = 2 dot "block" + c$ #h(0.3em) (fits thanks to the carry bits)
+    + bootstrap with a lookup table: \ $f(x) = $ block if $c$, else 0
+    + same for $b$ with $not c$, add, clean
+  ],
+)
+#v(0.8em)
+#align(center, table(
+  columns: 3,
+  stroke: none,
+  align: (left, left, right),
+  table.header[*Call*][*Used in*][*Bootstraps*],
+  [`select(c, a, b)`, two ciphertexts], [—], [≈ 3 per block],
+  [`select(c, 1, 0)`, plain values], [`peak_count`, `budget_hour`, `tariff_lookup`], [1 for the result],
+))
+#v(0.6em)
+#align(center)[
+  The magic is the *programmable bootstrap*: it resets the noise *and* applies a lookup table.
+]
+]
+
