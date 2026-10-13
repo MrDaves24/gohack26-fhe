@@ -119,14 +119,24 @@ Don't decide in advance which step is worst. Look at the numbers before writing 
 - **BFV/BGV:** exact integers, SIMD batching (thousands of slots) → `total` nearly free; comparisons expensive.
 - **CKKS:** approximate reals, great for ML inference; comparison = polynomial approximation of sign → slow, imprecise.
 - Message: choosing TFHE favors the comparison-heavy steps and penalizes `total`. *No best scheme, only the least painful for your program.*
+- **The example to use: summing.** `total` (24 additions) is our 2nd slowest step, 6.4 s; a month of 15-min readings (~2900 values) would take ~1 h in TFHE. With BFV/CKKS batching, thousands of values sit in one ciphertext and add up in a handful of operations: the month's total becomes cheap. Same program, the scheme alone moves a step from worst to trivial.
 - Optional stretch (only if ahead of schedule): benchmark just `total` with CKKS/BFV via OpenFHE Python bindings, one extra bar.
+
+## Could do (only if ahead of schedule)
+
+- **Naive vs optimized.** Our FHE code is deliberately naive (readable snippets). An optimized variant of the same steps: independent hours in parallel (`peak_mask`, `peak_count`), tree sum for `total`/`budget_hour`, a faster parameter set (e.g. multi-bit). Measured as extra steps, one chart: "what an expert can win back". Plain/FHE equality still asserted.
+
+## Notes for the slides (no measurement, no numbers)
+
+- Our numbers are a **pessimistic** FHE: TFHE, naive code, default (most conservative) parameters, fanless laptop CPU. GPUs and dedicated accelerators are much faster, but it takes heavy optimization and special hardware to get anywhere near what a consumer laptop does in plain code. Say it in one sentence, without figures.
+- Scale of the gap, from our own numbers (~10⁸–10⁹ per operation): a plain computation of 1 µs ≈ 1 h of FHE; 1 ms ≈ 2 weeks. Extrapolation, label it as such.
 
 ## To verify before putting on slides
 
 - [ ] Deployments: Apple (BFV, iOS 18 Live Caller ID Lookup / Enhanced Visual Search), Microsoft Edge Password Monitor, Zama (confidential smart contracts / fhEVM) — check current sources.
 - [ ] Li & Micciancio, Eurocrypt 2021 (IND-CPA^D, key recovery on CKKS from shared decryptions) — exact citation; one line on follow-up work on exact schemes; current library mitigations (noise flooding).
 - [ ] Scheme facts above.
-- [ ] FHE in deployment is memory/IO-bound rather than compute-bound (source for the backup slide), and GPU / ASIC speed-ups (Zama GPU numbers, DARPA DPRIVE accelerators) for "the gains are in dedicated hardware".
+- [ ] FHE in deployment is memory/IO-bound rather than compute-bound (source for the backup slide).
 - [ ] "Holy Grail" attribution for FHE / Gentry 2009 (hook slide).
 - [ ] Time of day of the 23 Oct deadline (ask organizers).
 
