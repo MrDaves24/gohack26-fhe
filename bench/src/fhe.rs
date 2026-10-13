@@ -1,6 +1,6 @@
 //! TFHE-rs implementation: same step names as `plain`.
 
-use crate::{Inputs, Outputs};
+use crate::Inputs;
 use std::mem::size_of;
 use tfhe::named::Named;
 use tfhe::prelude::*;
@@ -35,10 +35,8 @@ pub fn gt_u8(i: &EncInputs) -> EncOutputs {
     EncOutputs { gt: i.a.gt(&i.b) }
 }
 
-pub fn decrypt(o: &EncOutputs, ck: &ClientKey) -> Outputs {
-    Outputs {
-        gt: o.gt.decrypt(ck),
-    }
+pub fn decrypt(o: &EncOutputs, ck: &ClientKey) -> bool {
+    o.gt.decrypt(ck)
 }
 
 /// Rows of sizes.csv: bytes as `safe_serialize` would send them over the network,

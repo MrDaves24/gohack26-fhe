@@ -1,6 +1,8 @@
 mod fhe;
 mod plain;
 
+use plain::N;
+
 use clap::Parser;
 use rand::rngs::StdRng;
 use rand::{RngExt, SeedableRng};
@@ -11,7 +13,6 @@ use std::process::Command;
 use std::time::Instant;
 
 const TFHE_VERSION: &str = "1.8.1";
-const SEED: u64 = 26;
 /// A plain step takes nanoseconds, below what `Instant` resolves: loop it and divide.
 const PLAIN_ITERS: u32 = 1_000_000;
 
@@ -21,19 +22,80 @@ struct Args {
     /// Number of full runs (the median goes on the slides). 1 = quick mode.
     #[arg(long, default_value_t = 5)]
     runs: usize,
+    /// Seed for the generated day of readings.
+    #[arg(long, default_value_t = 26)]
+    seed: u64,
     /// Directory for timings.csv, sizes.csv and meta.json.
     #[arg(long, default_value = "results")]
     out: PathBuf,
 }
 
+/// Typical day in Wh per hour: low at night, peaks in the morning and evening.
+const PROFILE: [u16; N] = [
+    200, 200, 200, 200, 200, 200, 400, 1500, 1500, 600, 400, 400, //
+    500, 400, 400, 400, 600, 900, 2500, 2500, 2500, 2500, 800, 300,
+];
+/// Bounding the readings is what lets `bill` fit in a u32.
+const MAX_READING: u16 = 5000;
+
 pub struct Inputs {
+    /// Hook: two bytes to compare.
     pub a: u8,
     pub b: u8,
+    pub readings: [u16; N],
+    pub limit: u16,
+    pub tier: u8,
+    pub budget: u32,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Outputs {
-    pub gt: bool,
+    pub total: u32,
+    pub average: u32,
+    pub peak_count: u8,
+    pub peak_mask: [bool; N],
+    pub rate: u16,
+    pub bill: u32,
+    pub budget_hour: u8,
+}
+
+/// The profile with ±20% seeded noise per hour.
+fn generate(seed: u64) -> Inputs {
+    let mut rng = StdRng::seed_from_u64(seed);
+    let mut readings = [0; N];
+    for (h, r) in readings.iter_mut().enumerate() {
+        *r = (PROFILE[h] as u32 * rng.random_range(80..=120) / 100) as u16;
+        assert!(*r <= MAX_READING);
+    }
+    Inputs {
+        a: rng.random(),
+        b: rng.random(),
+        readings,
+        limit: 2000,
+        tier: 2,
+        budget: 15_000,
+    }
+}
+
+fn run_plain(t: &mut Timings, i: &Inputs) -> Outputs {
+    let readings = &i.readings;
+    let total = t.plain("total", || plain::total(black_box(readings)));
+    let rate = t.plain("tariff_lookup", || plain::tariff_lookup(black_box(i.tier)));
+    Outputs {
+        total,
+        average: t.plain("average", || plain::average(black_box(total))),
+        peak_count: t.plain("peak_count", || {
+            plain::peak_count(black_box(readings), black_box(i.limit))
+        }),
+        peak_mask: t.plain("peak_mask", || {
+            plain::peak_mask(black_box(readings), black_box(i.limit))
+        }),
+        rate,
+        bill: t.plain("bill", || plain::bill(black_box(total), black_box(rate))),
+        budget_hour: t.plain("budget_hour", || {
+            plain::budget_hour(black_box(readings), black_box(i.budget))
+        }),
+    }
 }
 
 /// Rows of timings.csv: impl, step, run, nanos (fractional for plain steps).
@@ -65,11 +127,7 @@ impl Timings {
 
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
-    let mut rng = StdRng::seed_from_u64(SEED);
-    let inputs = Inputs {
-        a: rng.random(),
-        b: rng.random(),
-    };
+    let inputs = generate(args.seed);
 
     let mut sizes = vec![];
     let mut t = Timings {
@@ -78,7 +136,17 @@ fn main() -> std::io::Result<()> {
     };
     for run in 0..args.runs {
         t.run = run;
-        let expected = t.plain("gt_u8", || plain::gt_u8(black_box(&inputs)));
+        let expected_gt = t.plain("gt_u8", || {
+            plain::gt_u8(black_box(inputs.a), black_box(inputs.b))
+        });
+        let expected = run_plain(&mut t, &inputs);
+        assert!(
+            expected.peak_count > 0 && expected.budget_hour < N as u8,
+            "boring day, try another seed: {expected:?}"
+        );
+        if run == 0 {
+            eprintln!("{expected:?}");
+        }
 
         let (ck, sk) = t.fhe("keygen", fhe::keygen);
         if run == 0 {
@@ -87,9 +155,9 @@ fn main() -> std::io::Result<()> {
         tfhe::set_server_key(sk);
         let enc = t.fhe("encrypt", || fhe::encrypt(&inputs, &ck));
         let enc_out = t.fhe("gt_u8", || fhe::gt_u8(&enc));
-        let got = t.fhe("decrypt", || fhe::decrypt(&enc_out, &ck));
+        let got_gt = t.fhe("decrypt", || fhe::decrypt(&enc_out, &ck));
 
-        assert_eq!(got, expected, "FHE and plain disagree (run {run})");
+        assert_eq!(got_gt, expected_gt, "FHE and plain disagree (run {run})");
         eprintln!("run {}/{} ok", run + 1, args.runs);
     }
 
@@ -137,6 +205,6 @@ fn print_medians(rows: &[(&str, &str, usize, f64)]) {
             .map(|r| r.3)
             .collect();
         v.sort_by(f64::total_cmp);
-        println!("{imp:>5} {step:<10} {:>16.2} ns", v[v.len() / 2]);
+        println!("{imp:>5} {step:<13} {:>16.2} ns", v[v.len() / 2]);
     }
 }

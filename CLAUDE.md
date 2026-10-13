@@ -25,7 +25,8 @@ bench/               # Rust crate: plain vs FHE smart meter + benchmark harness
 - Prefer the high-level API (`FheUint8/16/32`, `FheBool`, `ConfigBuilder`, `generate_keys`, `set_server_key`).
 - Step names are fixed and shared across code, slides and charts: `keygen`, `encrypt`, `total`, `average`, `peak_count`, `peak_mask`, `tariff_lookup`, `bill`, `budget_hour`, `decrypt`, plus `gt_u8` (single comparison, for the hook slide) and, for the optional compression variant, `expand` and `compress`.
 - Each FHE step should be a small, readable function: its body is what goes on the snippet slides. Favor clarity over cleverness; add a short comment naming the FHE workaround (e.g. `// no branch: compute both, select`).
-- Plain baseline: wrap inputs/outputs in `std::hint::black_box`.
+- Step code (`plain.rs`, `fhe.rs`) is C-like, almost pseudocode: index `for` loops, `if`, explicit types. No iterator chains or clever Rust; the audience doesn't read Rust.
+- Plain baseline: wrap inputs/outputs in `std::hint::black_box` *inside* the timed closure, or the compiler hoists the work out of the loop.
 - Plain and FHE outputs must be asserted equal. Fixed RNG seed for inputs.
 - Always benchmark with `--release`. Timing runs are slow: tell Pascal before starting long runs, and keep a quick mode (e.g. `--quick`, R=1) for development.
 - **Final numbers come from Pascal's MacBook Air**, not from a cloud/CI machine. Record machine, core count, tfhe version, date and R in `results/meta.json`.

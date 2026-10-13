@@ -1,0 +1,8 @@
+{
+  "machine": "Mac16,12",
+  "chip": "Apple M4",
+  "cores": 10,
+  "tfhe": "1.8.1",
+  "date": "2026-10-13",
+  "runs": 5
+}

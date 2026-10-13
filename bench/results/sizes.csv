@@ -1,0 +1,12 @@
+item,bytes
+client_key,31459
+server_key,180610891
+server_key_compressed,60228265
+FheBool,16593
+FheUint8,66101
+FheUint16,132101
+FheUint32,264101
+bool,1
+u8,1
+u16,2
+u32,4
