@@ -7,7 +7,7 @@
 #   ./present.sh -M               list monitors. -1 <presenter> -2 <projector> picks them by
 #                                 name, but macOS shows "(null)" names: prefer -s there.
 #   ./present.sh -P 7             restart at slide 7 after a crash
-# On the projector, turn mirroring off (macOS: Displays settings) or pdfpc sees one screen.
+# More problems, fixes and keys: PRESENTING.md.
 set -e
 cd "$(dirname "$0")"
 pdf=build/presentation-16-9.pdf
