@@ -43,7 +43,7 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | | **② The overhead** | | |
 | 12 | Smart meter | 2:00 | Scenario in pseudo-code (named steps), pipeline diagram client ↔ server: 55 B in, 3.6 MB up, 1.5 MB down, 181 MB server key once; plus one line on compression if measured. One line: the output is a fixed mask, never a list (the cut "variable output" snippet). Code NOT shown (it's on GitHub). |
 | 13 | Timings | 2:00 | Per-step chart, plain vs FHE, log scale; whole day ~30 s vs ~18 ns. Hardware: M4, 4P + 6E cores, fanless, sustained load. |
-| 14 | Where the time goes | 1:30 | Stacked share: `budget_hour` + `total` ≈ 63% (check on final numbers). Sums are TFHE's weak spot → leads to ③. |
+| 14 | Where the time goes | 1:30 | Sorted FHE bars, linear: `budget_hour` + `total` ≈ 61% (computed from the CSV). Sums are TFHE's weak spot → leads to ③. |
 | | **③ FHE in the real world** | | |
 | 15 | Schemes & deployments | 2:00 | "No best scheme, only the one that hurts least": batching makes sums nearly free. Real deployments = small targeted lookups: "one encrypted question, one shallow circuit, plus a lot of non-HE plumbing" (`research/deployments.md`). |
 | 16 | Weird pitfalls | 1:00 | No integrity; shared decryptions can leak the key (Li & Micciancio). Mitigation **depends on the scheme**: almost free for TFHE since 2025, expensive for CKKS, worse than nothing if sized for the average case (`research/attacks.md`). No side channels. |

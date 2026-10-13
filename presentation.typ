@@ -99,6 +99,51 @@
 #let bytes(item) = int(sizes.find(r => r.item == item).bytes)
 #let mb(item) = str(calc.round(bytes(item) / 1e6, digits: 0)) + " MB"
 #let kb(item) = str(calc.round(bytes(item) / 1e3, digits: 0)) + " KB"
+// --- Charts ------------------------------------------------------------------------------
+
+// Brand-derived series colors, checked with the dataviz validator (CVD, contrast).
+#let c-plain = rgb("#1E9BD7")
+#let c-fhe = rgb("#2B4DA8")
+#let c-rest = gray.lighten(30%)
+
+#let fmt-time(ns) = {
+  let (v, unit) = if ns < 1e3 { (ns, "ns") } else if ns < 1e6 { (ns / 1e3, "µs") } else if (
+    ns < 1e9
+  ) { (ns / 1e6, "ms") } else { (ns / 1e9, "s") }
+  str(calc.round(v, digits: if v < 10 { 1 } else { 0 })) + " " + unit
+}
+
+// Log scale from 0.1 ns to 100 s; bars use at most `room` of the width, the rest is
+// for the value label.
+#let log-lo = -1
+#let log-hi = 11
+#let room = 82%
+#let log-frac(ns) = (calc.log(ns) - log-lo) / (log-hi - log-lo)
+#let log-ticks = ((0, "1 ns"), (3, "1 µs"), (6, "1 ms"), (9, "1 s"))
+
+#let hbar(frac, fill, label) = stack(
+  dir: ltr,
+  spacing: 0.4em,
+  box(width: frac * room, height: 0.9em, fill: fill, radius: (right: 2pt)),
+  box(height: 0.9em, align(horizon, text(size: 0.8em, label))),
+)
+#let gridlines = for (e, _) in log-ticks {
+  place(dx: log-frac(calc.pow(10.0, e)) * room, line(angle: 90deg, length: 100%, stroke: 0.5pt + gray.lighten(50%)))
+}
+
+// One step: plain and FHE bars on the shared log axis.
+#let timing-row(step) = (
+  align(right + horizon, raw(step)),
+  block(width: 100%, height: 1.9em, {
+    gridlines
+    stack(
+      spacing: 2pt,
+      hbar(log-frac(median("plain", step)), c-plain, fmt-time(median("plain", step))),
+      hbar(log-frac(median("fhe", step)), c-fhe, fmt-time(median("fhe", step))),
+    )
+  }),
+)
+
 #let mb1(item) = str(calc.round(bytes(item) / 1e6, digits: 1)) + " MB"
 
 // A horizontal arrow for the pipeline diagram: what travels above, its size below.
@@ -362,9 +407,57 @@
 
 #speaker-note[Every step is 10⁹× slower; a day takes 30 s against 18 ns.]
 
+#[
+#set text(size: 0.6em)
+#let steps = ("total", "average", "peak_count", "peak_mask", "tariff_lookup", "bill", "budget_hour")
+#align(right)[
+  #box(width: 0.8em, height: 0.8em, fill: c-plain) Plain Rust #h(1.5em)
+  #box(width: 0.8em, height: 0.8em, fill: c-fhe) FHE (TFHE-rs)
+]
+#grid(
+  columns: (auto, 1fr),
+  column-gutter: 0.8em,
+  row-gutter: 0.55em,
+  ..steps.map(timing-row).flatten(),
+  grid.hline(stroke: 0.5pt + gray),
+  ..timing-row("day"),
+  [],
+  block(width: 100%, height: 1em, for (e, l) in log-ticks {
+    place(dx: log-frac(calc.pow(10.0, e)) * room - 1em, text(fill: gray.darken(20%), l))
+  }),
+)
+#align(center, text(size: 1.4em)[
+  One day: *#fmt-time(median("fhe", "day"))* encrypted vs #fmt-time(median("plain", "day")) in plain.
+])
+]
+
 == Where the time goes
 
-#speaker-note[`budget_hour` and `total` are 63% of the time: sums are TFHE's weak spot.]
+#speaker-note[`budget_hour` and `total`, the two running sums, are about 60% of the time: sums are TFHE's weak spot.]
+
+#[
+#set text(size: 0.8em)
+#let steps = ("total", "average", "peak_count", "peak_mask", "tariff_lookup", "bill", "budget_hour")
+#let rows = steps.map(st => (st, median("fhe", st))).sorted(key: r => -r.at(1))
+#let sum = rows.map(r => r.at(1)).sum()
+#let top = rows.at(0).at(1)
+#let top2 = (rows.at(0).at(1) + rows.at(1).at(1)) / sum
+#grid(
+  columns: (auto, 1fr),
+  column-gutter: 0.8em,
+  row-gutter: 0.6em,
+  ..rows.enumerate().map(((i, (st, ns))) => (
+    align(right + horizon, raw(st)),
+    hbar(ns / top, if i < 2 { c-fhe } else { c-rest },
+      [#fmt-time(ns) · #str(calc.round(ns / sum * 100)) %]),
+  )).flatten(),
+)
+#v(0.8em)
+#align(center, text(size: 1.3em)[
+  The two running sums, `budget_hour` and `total`, take *#str(calc.round(top2 * 100)) %*
+  of the time: sums are TFHE's weak spot.
+])
+]
 
 = FHE in the real world
 
