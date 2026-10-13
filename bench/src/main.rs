@@ -11,6 +11,7 @@ use std::hint::black_box;
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::Instant;
+use tfhe::prelude::*;
 
 const TFHE_VERSION: &str = "1.8.1";
 /// A plain step takes nanoseconds, below what `Instant` resolves: loop it and divide.
@@ -125,6 +126,20 @@ impl Timings {
     }
 }
 
+fn run_fhe(t: &mut Timings, i: &fhe::EncInputs) -> fhe::EncOutputs {
+    let total = t.fhe("total", || fhe::total(&i.readings));
+    let rate = t.fhe("tariff_lookup", || fhe::tariff_lookup(&i.tier));
+    fhe::EncOutputs {
+        average: t.fhe("average", || fhe::average(&total)),
+        peak_count: t.fhe("peak_count", || fhe::peak_count(&i.readings, &i.limit)),
+        peak_mask: t.fhe("peak_mask", || fhe::peak_mask(&i.readings, &i.limit)),
+        bill: t.fhe("bill", || fhe::bill(&total, &rate)),
+        budget_hour: t.fhe("budget_hour", || fhe::budget_hour(&i.readings, &i.budget)),
+        total,
+        rate,
+    }
+}
+
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
     let inputs = generate(args.seed);
@@ -154,10 +169,20 @@ fn main() -> std::io::Result<()> {
         }
         tfhe::set_server_key(sk);
         let enc = t.fhe("encrypt", || fhe::encrypt(&inputs, &ck));
-        let enc_out = t.fhe("gt_u8", || fhe::gt_u8(&enc));
-        let got_gt = t.fhe("decrypt", || fhe::decrypt(&enc_out, &ck));
+        let enc_gt = t.fhe("gt_u8", || fhe::gt_u8(&enc.a, &enc.b));
+        let enc_out = run_fhe(&mut t, &enc);
+        let got = t.fhe("decrypt", || fhe::decrypt(&enc_out, &ck));
+        if run == 0 {
+            sizes.push(("upload", fhe::upload_size(&enc)));
+            sizes.push(("download", fhe::download_size(&enc_out)));
+        }
 
-        assert_eq!(got_gt, expected_gt, "FHE and plain disagree (run {run})");
+        let got_gt: bool = enc_gt.decrypt(&ck);
+        assert_eq!(
+            got_gt, expected_gt,
+            "FHE and plain disagree on gt_u8 (run {run})"
+        );
+        assert_eq!(got, expected, "FHE and plain disagree (run {run})");
         eprintln!("run {}/{} ok", run + 1, args.runs);
     }
 
