@@ -123,7 +123,7 @@ Don't decide in advance which step is worst. Look at the numbers before writing 
 
 | Date | Task | Done |
 |---|---|---|
-| Tue 13 Oct | Repo setup, `tfhe =1.8.1` hello world compiling (first build is slow), first `gt_u8` timing for the hook | [ ] |
+| Tue 13 Oct | Repo setup, `tfhe =1.8.1` hello world compiling (first build is slow), first `gt_u8` timing for the hook | [x] |
 | Wed 14 Oct | Plain scenario (named steps). FHE: init/encrypt/decrypt + `total`, `peak_count` | [ ] |
 | Thu 15 Oct | FHE: `peak_mask`, `tariff_lookup`, `bill`, `budget_hour`, `average`. Plain == FHE check | [ ] |
 | Fri 16 Oct | Step timings, sizes, CSV/JSON output. README, push to GitHub. Overnight benchmark | [ ] |
