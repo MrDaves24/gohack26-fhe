@@ -169,12 +169,38 @@
 
 = Introduction
 
-== Hook
+== The Holy Grail
 
 #speaker-note[
   FHE is "the never-to-be-found Holy Grail of cryptography" (Micciancio, CACM 2010), and it now exists.
   One encrypted comparison: 41 ms. Meanwhile your CPU does about 60 million plain ones.
   "In theory, the Holy Grail. In practice, it's hell."
+  Quote: D. Micciancio, "A First Glimpse of Cryptography's Holy Grail", CACM 53(3), 2010
+  (research/history-and-bottlenecks.md). Gentry, STOC 2009: first FHE scheme.
+]
+
+#[
+#set align(center)
+#text(size: 1.1em)[_"the never-to-be-found Holy Grail of cryptography"_]
+#v(-0.3em)
+#text(size: 0.6em, fill: gray.darken(20%))[D. Micciancio, CACM 2010, on FHE before Gentry's 2009 scheme]
+#v(0.5em)
+#text(size: 0.75em)[
+  #box(inset: 0.5em, stroke: 1pt + navy, radius: 3pt)[🔒 your data]
+  #h(0.3em) → #h(0.3em)
+  #box(inset: 0.5em, stroke: 1pt + navy, radius: 3pt)[the cloud computes, never decrypts]
+  #h(0.3em) → #h(0.3em)
+  #box(inset: 0.5em, stroke: 1pt + navy, radius: 3pt)[🔒 result, only you can read it]
+]
+#pause
+#v(0.8em)
+#let gt-fhe = median("fhe", "gt_u8")
+#let gt-plain = median("plain", "gt_u8")
+`a > b` on two encrypted bytes: #text(size: 1.6em, fill: navy)[*#fmt-time(gt-fhe)*] \
+#text(size: 0.8em)[Meanwhile, your CPU does *#str(calc.round(gt-fhe / gt-plain / 1e6)) million* of them in plain.]
+#pause
+#v(0.6em)
+#text(size: 1.2em)[In theory, the Holy Grail. *In practice, hell.*]
 ]
 
 == About me
@@ -204,6 +230,27 @@
   (1) small snippets to see how code must be rewritten,
   (2) one scenario to measure the overhead in time and size,
   (3) what that means for choosing and using FHE.
+]
+
+#[
+#let part(n, title, body) = box(
+  width: 100%, height: 7.5em, inset: 0.8em, radius: 4pt, stroke: 1.5pt + navy,
+  align(center)[
+    #text(size: 1.6em, fill: c-plain)[*#n*] \
+    *#title* \
+    #text(size: 0.75em, body)
+  ],
+)
+#grid(
+  columns: (1fr, auto, 1fr, auto, 1fr),
+  column-gutter: 0.6em,
+  align: horizon,
+  part[1][Rewriting code][small snippets: how the code must change],
+  text(fill: navy, size: 1.5em)[→],
+  part[2][The overhead][one program: what it costs in time and size],
+  text(fill: navy, size: 1.5em)[→],
+  part[3][The real world][schemes, pitfalls, and when it is worth it],
+)
 ]
 
 = FHE in one slide
