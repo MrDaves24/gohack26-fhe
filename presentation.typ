@@ -505,12 +505,72 @@
 #speaker-note[
   The scheme decides what's cheap: batching makes sums nearly free.
   Real deployments are small, targeted lookups.
+  Sources: research/schemes.md, research/deployments.md.
+]
+
+#[
+#set text(size: 0.62em)
+#grid(
+  columns: (1.35fr, 1fr),
+  column-gutter: 1.5em,
+  align: top,
+  [
+    #text(size: 1.3em)[*No best scheme, only the one that hurts least*]
+    #v(0.3em)
+    #table(
+      columns: (auto, 1fr, 1fr),
+      stroke: (x, y) => if y > 0 { (top: 0.5pt + gray.lighten(40%)) },
+      inset: (x: 0.4em, y: 0.5em),
+      table.header[*Scheme*][*Cheap*][*Expensive*],
+      [*TFHE* \ small integers], [any function of a small value (lookup): compare, select], [sums and wide integers: carries cost bootstraps],
+      [*BFV / BGV* \ exact integers], [thousands of values per ciphertext: one addition adds them all], [comparisons, moving values between slots],
+      [*CKKS* \ approximate reals], [vector arithmetic, ML inference], [comparisons (approximated), exact results],
+    )
+    #v(0.3em)
+    Our `total`: 24 encrypted additions in TFHE, *#secs("total")*. In BFV the 24 readings fit in one ciphertext and add up in a handful of operations.
+  ],
+  [
+    #text(size: 1.3em)[*Who uses it*]
+    #v(0.3em)
+    - *Apple* (BFV, iOS 18+): Live Caller ID, landmarks in Photos, Mail logos: an encrypted lookup.
+    - *Microsoft Edge* (SEAL): "is this password in a leak?", an encrypted match.
+    - *Zama* (TFHE, Ethereum, Dec 2025): confidential token balances, about 20 transactions/s on CPU.
+    #v(0.4em)
+    #align(center)[_One encrypted question, one shallow computation, plus a lot of non-FHE plumbing._]
+  ],
+)
 ]
 
 == Weird pitfalls
 
 #speaker-note[
   No integrity, and shared decryptions can leak the key. The fix depends on the scheme.
+  Li & Micciancio, EUROCRYPT 2021 (ePrint 2020/1533). Exact schemes: CRYPTO 2024 (ePrint 2024/116),
+  CCS 2024 (ePrint 2024/127). TFHE-rs: 2^-40 in 0.8, 2^-128 since 1.0. Sources: research/attacks.md.
+]
+
+#[
+#set text(size: 0.72em)
+#let pitfall(title, body) = block(
+  width: 100%, inset: (left: 0.8em, y: 0.3em), stroke: (left: 3pt + c-fhe),
+  [*#title* \ #body],
+)
+#pitfall[No integrity: the server can return anything][
+  Ciphertexts are malleable by design: that is how the server computes on them. A dishonest
+  server can return a wrong result, and you can't tell. Verifiable FHE is still research.
+]
+#v(0.4em)
+#pitfall[Sharing a decrypted result can leak the key][
+  CKKS: Li & Micciancio (2021) recover the secret key from shared decryptions.
+  2024: exact schemes too (BFV, BGV, TFHE), through rare decryption failures: under an hour
+  on a laptop against several libraries.
+]
+#v(0.4em)
+#pitfall[The fix depends on the scheme][
+  TFHE-rs: make failures astronomically rare ($2^(-40)$ in v0.8, $2^(-128)$ since v1.0):
+  almost free. CKKS: add noise before decrypting, which means bigger parameters and slower
+  code. Our benchmark already uses the $2^(-128)$ defaults.
+]
 ]
 
 = Takeaway
