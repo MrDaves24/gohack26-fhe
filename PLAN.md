@@ -176,6 +176,7 @@ Findings and sources: `research/deployments.md`, `research/attacks.md`, `researc
 
 ## Likely questions (prepare answers / backup slides)
 
+- Why is an encrypted byte 66 KB? (2-bit blocks × 2049 u64 each; answer in `research/ciphertext-size.md`)
 - Why TFHE and not CKKS/BFV?
 - How does it compare on GPU / dedicated hardware? Why doesn't more cores help? (thread scaling test)
 - Why not MPC or a TEE instead?
