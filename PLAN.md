@@ -88,16 +88,23 @@ Privacy motivation: hourly electricity use reveals when someone is home.
 
 ## Benchmark methodology
 
-- `cargo run --release`, on **my laptop** (MacBook Air — note chip and core count on the slide). These are the numbers that go on the slides.
+- `cargo run --release`, on **my laptop**: MacBook Air M4 (`Mac16,12`), **4 performance + 6 efficiency cores**, fanless. Say "4P + 6E cores" on the slide, not "10 cores". These are the numbers that go on the slides.
 - Time every step in both versions with `Instant::now()`, plus `keygen`, `encrypt`, `decrypt` as separate rows.
 - Hook number: one `FheUint8` `gt` vs plain `u8 >`, timed as step `gt_u8` (median over many repeats for plain, it's ~1 ns).
 - Plain baseline must use `std::hint::black_box` so it isn't optimized away.
 - Repeat the full run R times (e.g. 5, fewer if too slow), report the **median**. A 5-run benchmark takes ~4 min on 4 threads.
 - Threads: development runs use `RAYON_NUM_THREADS=4` (keeps the laptop usable); the final run uses all 10 cores. `meta.json` records `threads`.
+- **Thermal throttling (decided: keep it).** The fanless Air slows down under sustained load: run 1 is ~15–25% faster than runs 2–5 on every FHE step. We report the plain **median**, i.e. the warm, sustained-load speed — what a busy server would see. No cooldown between runs. Slide wording: "fanless MacBook Air, sustained load".
+- Timing tool: in-program `Instant` per step. FHE steps take 0.5–13 s, so timer precision is irrelevant; run-to-run variance (throttling) dominates. Criterion (built for µs–ms functions, ≥10 samples per step → ~1 h) and hyperfine (whole process only, no per-step split) were rejected.
 - Sizes (`safe_serialized_size`, bytes, measured once): one ciphertext per type used (`FheUint8/16/32`, `FheBool`), plaintext equivalents, client key, server key, compressed server key (done in the template). With the scenario: `upload` (all encrypted inputs) and `download` (all encrypted outputs).
 - Compression variant (optional, expendable): `CompactCiphertextList` + `CompactPublicKey` for the upload, `CompressedCiphertextList` (`enable_compression`) for the download. Size rows `upload_compact`, `download_compressed`; timed FHE steps `expand` (server unpacks the upload) and `compress` (server packs the outputs). Shows the trade-off: smaller, but slower again.
 - Optional: scaling with N = 24, 48, 96 for a scaling chart.
-- **IO-bound, not CPU-bound.** FHE work is dominated by moving data, not by arithmetic: each bootstrap streams tens of MB of key material that doesn't fit in the CPU cache, so memory bandwidth limits it; in a real deployment, keys (181 MB server key per client) and ciphertexts (3.6 MB upload per household-day) also go through disk and network. Here everything stays in RAM, so only the memory part shows. Test: run the benchmark with `RAYON_NUM_THREADS` = 1, 2, 4, 10 (`--runs 1`). Expected: far from linear speed-up (4 → 10 threads gave only ~1.5×). A second cause to tell apart: small radix integers have few blocks and sequential carries, so little parallel work exists. Use for the "why doesn't more hardware help?" question (backup slide), and the takeaway.
+- **Why more cores help little.** Thread test (13 Oct, `--runs 1`, 1/2/4/10 threads): whole scenario 84 s → 50 → 44 → 36 s, i.e. **10 threads ≈ 2.3× one thread**. Per step (1 → 10): `bill` 3.7×, `average_secret_n` 2.7×, `total` 2.2×, `budget_hour`/`gt_u8`/`peak_count` ~1.9×. Explanations, by strength of evidence:
+  1. **Little parallel work** (fits the data): small radix integers have few blocks and carries propagate sequentially; ops with more independent work (u32 multiplication) scale best.
+  2. **P/E cores**: threads 5–10 land on efficiency cores (slower, ¼ of the L2), so 4 → 10 adds little.
+  3. **Memory-bound** (not shown): CPU time grows much faster than speed-up, but rayon threads spin while idle, so this doesn't prove memory stalls. Would need hardware counters; not worth it.
+  Single runs during warm-up, so noisy (4 threads looked slower than 2 on `total`).
+  Slide/backup wording: "10 cores ≈ 2.3× one core. More hardware helps little; the gains are in GPUs and dedicated chips." Real deployments are also IO-bound (181 MB server key per client, 3.6 MB per household-day through disk and network): say it only with a source (see To verify).
 
 **Output files** (loaded directly by Typst for the charts):
 - `bench/results/timings.csv` — `impl,step,run,nanos` (`impl` ∈ `plain`,`fhe`)
@@ -119,6 +126,7 @@ Don't decide in advance which step is worst. Look at the numbers before writing 
 - [ ] Deployments: Apple (BFV, iOS 18 Live Caller ID Lookup / Enhanced Visual Search), Microsoft Edge Password Monitor, Zama (confidential smart contracts / fhEVM) — check current sources.
 - [ ] Li & Micciancio, Eurocrypt 2021 (IND-CPA^D, key recovery on CKKS from shared decryptions) — exact citation; one line on follow-up work on exact schemes; current library mitigations (noise flooding).
 - [ ] Scheme facts above.
+- [ ] FHE in deployment is memory/IO-bound rather than compute-bound (source for the backup slide), and GPU / ASIC speed-ups (Zama GPU numbers, DARPA DPRIVE accelerators) for "the gains are in dedicated hardware".
 - [ ] "Holy Grail" attribution for FHE / Gentry 2009 (hook slide).
 - [ ] Time of day of the 23 Oct deadline (ask organizers).
 
