@@ -46,6 +46,55 @@
 #show raw: set text(font: "Menlo")
 #set strong(delta: 200)
 
+// --- Code snippets, read from the benchmarked code -------------------------------------
+
+// The function `name` from a Rust file, from `pub fn name(` to its closing `}`.
+// `hl` lists the lines to highlight, counted from 1 at the `fn` line.
+#let code(path, name, hl: ()) = {
+  let lines = read(path).split("\n")
+  let start = lines.position(l => l.starts-with("pub fn " + name + "("))
+  let body = ()
+  for l in lines.slice(start) {
+    body.push(l.trim("pub ", at: std.start, repeat: false))
+    if l == "}" { break }
+  }
+  show raw.line: it => if it.number in hl {
+    box(fill: cyan.lighten(80%), outset: (y: 2pt), width: 100%, it)
+  } else { it }
+  raw(body.join("\n"), lang: "rust", block: true)
+}
+#let plain(name, hl: ()) = code("bench/src/plain.rs", name, hl: hl)
+#let fhe(name, hl: ()) = code("bench/src/fhe.rs", name, hl: hl)
+
+// Plain left, FHE right, the workaround as a caption.
+#let snippet(left, right, caption) = {
+  grid(
+    columns: (1fr, 1fr),
+    column-gutter: 1em,
+    align: top,
+    row-gutter: 0.6em,
+    text(size: 0.7em, fill: gray.darken(20%))[Plain Rust],
+    text(size: 0.7em, fill: gray.darken(20%))[FHE (TFHE-rs)],
+    text(size: 0.52em, left), text(size: 0.52em, right),
+  )
+  v(0.8em)
+  align(center, text(size: 0.9em, caption))
+}
+
+// --- Benchmark results ------------------------------------------------------------------
+
+#let timings = csv("bench/results/timings.csv", row-type: dictionary)
+#let sizes = csv("bench/results/sizes.csv", row-type: dictionary)
+// Median over runs, in nanoseconds.
+#let median(impl, step) = {
+  let v = timings.filter(r => r.impl == impl and r.step == step).map(r => float(r.nanos)).sorted()
+  v.at(calc.div-euclid(v.len(), 2))
+}
+#let secs(step) = str(calc.round(median("fhe", step) / 1e9, digits: 1)) + " s"
+#let bytes(item) = int(sizes.find(r => r.item == item).bytes)
+#let mb(item) = str(calc.round(bytes(item) / 1e6, digits: 0)) + " MB"
+#let kb(item) = str(calc.round(bytes(item) / 1e3, digits: 0)) + " KB"
+
 #title-slide()
 
 = Introduction
@@ -102,10 +151,67 @@
 
 #speaker-note[Plain: nothing. FHE: keys, and a 181 MB server key shipped to the server.]
 
+#snippet(
+  ```rust
+  // nothing to set up
+
+  let x: u16 = reading;
+  ```,
+  ```rust
+  // client: generate the keys
+  let (client_key, server_key) =
+      generate_keys(ConfigBuilder::default());
+
+  // server: receives the server key, once
+  set_server_key(server_key);
+
+  // client: encrypt every input
+  let x = FheUint16::encrypt(reading, &client_key);
+  ```,
+  [Keys first: the server key weighs *#mb("server_key")*, and the server needs it to compute.],
+)
+
 == Branching
 
 #speaker-note[
   `if` on a secret doesn't compile (`FheBool` is not `bool`): compute both sides, then select.
+  First the naive version and the real rustc 1.98 error, then the fix.
+]
+
+#alternatives[
+  #snippet(
+    plain("peak_count", hl: (4, 5)),
+    [
+      ```rust
+      fn peak_count(
+          readings: &[FheUint16],
+          limit: &FheUint16,
+      ) -> FheUint8 {
+          let mut count = FheUint8::encrypt_trivial(0u8);
+          for h in 0..N {
+              if readings[h].gt(limit) {
+                  count += 1u8;
+              }
+          }
+          count
+      }
+      ```
+      #text(fill: red.darken(20%))[
+        ```
+        error[E0308]: mismatched types
+          if readings[h].gt(limit) {
+             ^^^^^^^^^^^^^^^^^^^^^ expected `bool`, found `FheBool`
+        ```
+      ]
+    ],
+    [The server can't branch on a value it can't read.],
+  )
+][
+  #snippet(
+    plain("peak_count", hl: (4, 5)),
+    fhe("peak_count", hl: (8, 9)),
+    [No branch on a secret: always compute, then *select*.],
+  )
 ]
 
 == Loops
@@ -115,19 +221,58 @@
   loop the maximum, or rethink the algorithm (`budget_hour`).
 ]
 
+#snippet(
+  plain("budget_hour", hl: (5, 6, 7)),
+  fhe("budget_hour", hl: (11, 12)),
+  [No early exit: always run all 24 hours. Here, *rethink* the algorithm: count instead of stopping.],
+)
+
 == Secret index
 
 #speaker-note[
   `TARIFFS[tier]` would leak through memory access: visit every slot. O(1) becomes O(n).
 ]
 
+#snippet(
+  plain("tariff_lookup", hl: (2,)),
+  fhe("tariff_lookup", hl: (4, 5, 6, 7)),
+  [The memory access would reveal the index: visit *every* slot. O(1) becomes O(n).],
+)
+
 == Division
 
 #speaker-note[Divide by a public 24: 2.1 s. By an encrypted 24: 15.7 s. Same result.]
 
+#snippet(
+  [#plain("average") #plain("average_secret_n")],
+  [
+    #fhe("average", hl: (3,))
+    #text(size: 1.4em)[#secs("average")]
+    #fhe("average_secret_n", hl: (5,))
+    #text(size: 1.4em)[#secs("average_secret_n")]
+  ],
+  [Divide by a *public* value whenever you can.],
+)
+
 == Bit width
 
 #speaker-note[Choose widths up front: 1 byte becomes 66 KB, and every bit costs time.]
+
+#snippet(
+  plain("total", hl: (2, 4)),
+  [
+    #fhe("total", hl: (3, 5))
+    #set text(size: 1.3em)
+    #table(
+      columns: 3,
+      stroke: none,
+      [`u8`], [1 B], [#kb("FheUint8")],
+      [`u16`], [2 B], [#kb("FheUint16")],
+      [`u32`], [4 B], [#kb("FheUint32")],
+    )
+  ],
+  [Choose widths up front: a day in `u16` would wrap, and every bit costs size and time.],
+)
 
 = The overhead
 

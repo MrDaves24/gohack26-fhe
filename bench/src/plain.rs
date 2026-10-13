@@ -38,7 +38,10 @@ pub fn peak_count(readings: &[u16; N], limit: u16) -> u8 {
     count
 }
 
-pub fn peak_mask(readings: &[u16; N], limit: u16) -> [bool; N] {
+pub fn peak_mask(
+    readings: &[u16; N],
+    limit: u16,
+) -> [bool; N] {
     let mut mask = [false; N];
     for h in 0..N {
         mask[h] = readings[h] > limit;

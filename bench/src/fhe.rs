@@ -8,8 +8,9 @@ use tfhe::named::Named;
 use tfhe::prelude::*;
 use tfhe::safe_serialization::safe_serialized_size;
 use tfhe::{
-    ClientKey, CompressedServerKey, ConfigBuilder, FheBool, FheUint8, FheUint16, FheUint32,
-    ServerKey, Versionize, generate_keys,
+    ClientKey, CompressedServerKey, ConfigBuilder, FheBool,
+    FheUint8, FheUint16, FheUint32, ServerKey, Versionize,
+    generate_keys,
 };
 
 pub struct EncInputs {
@@ -41,7 +42,8 @@ pub fn keygen() -> (ClientKey, ServerKey) {
 pub fn encrypt(i: &Inputs, ck: &ClientKey) -> EncInputs {
     let mut readings = Vec::new();
     for h in 0..N {
-        readings.push(FheUint16::encrypt(i.readings[h], ck));
+        readings
+            .push(FheUint16::encrypt(i.readings[h], ck));
     }
     EncInputs {
         a: FheUint8::encrypt(i.a, ck),
@@ -60,7 +62,7 @@ pub fn gt_u8(a: &FheUint8, b: &FheUint8) -> FheBool {
 }
 
 pub fn total(readings: &[FheUint16]) -> FheUint32 {
-    // widen first: a day of u16 readings would wrap silently
+    // widen first: a day in u16 would wrap silently
     let mut total = FheUint32::encrypt_trivial(0u32);
     for h in 0..N {
         total += FheUint32::cast_from(readings[h].clone());
@@ -69,16 +71,22 @@ pub fn total(readings: &[FheUint16]) -> FheUint32 {
 }
 
 pub fn average(total: &FheUint32) -> FheUint32 {
-    // divide by a public value: far cheaper than by a ciphertext
+    // public divisor: far cheaper than a ciphertext
     total / N as u32
 }
 
 /// Division slide: the same average, when the count is secret too.
-pub fn average_secret_n(total: &FheUint32, n: &FheUint32) -> FheUint32 {
+pub fn average_secret_n(
+    total: &FheUint32,
+    n: &FheUint32,
+) -> FheUint32 {
     total / n
 }
 
-pub fn peak_count(readings: &[FheUint16], limit: &FheUint16) -> FheUint8 {
+pub fn peak_count(
+    readings: &[FheUint16],
+    limit: &FheUint16,
+) -> FheUint8 {
     let mut count = FheUint8::encrypt_trivial(0u8);
     for h in 0..N {
         // no branch on a secret: always add, 1 or 0
@@ -88,8 +96,11 @@ pub fn peak_count(readings: &[FheUint16], limit: &FheUint16) -> FheUint8 {
     count
 }
 
-pub fn peak_mask(readings: &[FheUint16], limit: &FheUint16) -> Vec<FheBool> {
-    // fixed-size output: one flag per hour, never a list of the peak hours
+pub fn peak_mask(
+    readings: &[FheUint16],
+    limit: &FheUint16,
+) -> Vec<FheBool> {
+    // fixed size: one flag per hour, never a list
     let mut mask = Vec::new();
     for h in 0..N {
         mask.push(readings[h].gt(limit));
@@ -98,29 +109,37 @@ pub fn peak_mask(readings: &[FheUint16], limit: &FheUint16) -> Vec<FheBool> {
 }
 
 pub fn tariff_lookup(tier: &FheUint8) -> FheUint16 {
-    // no secret index: visit every slot, keep only the one that matches
+    // no secret index: visit every slot, keep the match
     let mut rate = FheUint16::encrypt_trivial(0u16);
     for i in 0..TARIFFS.len() {
         let is_tier = tier.eq(i as u8);
-        rate += FheUint16::select(&is_tier, TARIFFS[i], 0u16);
+        rate +=
+            FheUint16::select(&is_tier, TARIFFS[i], 0u16);
     }
     rate
 }
 
-pub fn bill(total: &FheUint32, rate: &FheUint16) -> FheUint32 {
-    // ciphertext × ciphertext: the expensive multiplication
+pub fn bill(
+    total: &FheUint32,
+    rate: &FheUint16,
+) -> FheUint32 {
+    // ciphertext × ciphertext: the expensive kind
     let rate = FheUint32::cast_from(rate.clone());
     total * &rate / 1000u32
 }
 
-pub fn budget_hour(readings: &[FheUint16], budget: &FheUint32) -> FheUint8 {
-    // no early exit: the loop length would leak the answer.
-    // The running sum only grows, so count the hours still within budget.
+pub fn budget_hour(
+    readings: &[FheUint16],
+    budget: &FheUint32,
+) -> FheUint8 {
+    // no early exit: the loop length would leak.
+    // The sum only grows: count hours within budget.
     let mut used = FheUint32::encrypt_trivial(0u32);
     let mut hour = FheUint8::encrypt_trivial(0u8);
     for h in 0..N {
         used += FheUint32::cast_from(readings[h].clone());
-        hour += FheUint8::select(&used.le(budget), 1u8, 0u8);
+        hour +=
+            FheUint8::select(&used.le(budget), 1u8, 0u8);
     }
     hour
 }
@@ -143,11 +162,17 @@ pub fn decrypt(o: &EncOutputs, ck: &ClientKey) -> Outputs {
 
 /// Rows of sizes.csv: bytes as `safe_serialize` would send them over the network,
 /// next to the plaintext size of each type.
-pub fn sizes(ck: &ClientKey, sk: &ServerKey) -> Vec<(&'static str, u64)> {
+pub fn sizes(
+    ck: &ClientKey,
+    sk: &ServerKey,
+) -> Vec<(&'static str, u64)> {
     vec![
         ("client_key", size(ck)),
         ("server_key", size(sk)),
-        ("server_key_compressed", size(&CompressedServerKey::new(ck))),
+        (
+            "server_key_compressed",
+            size(&CompressedServerKey::new(ck)),
+        ),
         ("FheBool", size(&FheBool::encrypt(true, ck))),
         ("FheUint8", size(&FheUint8::encrypt(0u8, ck))),
         ("FheUint16", size(&FheUint16::encrypt(0u16, ck))),
@@ -162,7 +187,10 @@ pub fn sizes(ck: &ClientKey, sk: &ServerKey) -> Vec<(&'static str, u64)> {
 /// Scenario inputs, client → server (the hook bytes are not part of it).
 pub fn upload_size(i: &EncInputs) -> u64 {
     let readings: u64 = i.readings.iter().map(size).sum();
-    readings + size(&i.limit) + size(&i.tier) + size(&i.budget)
+    readings
+        + size(&i.limit)
+        + size(&i.tier)
+        + size(&i.budget)
 }
 
 /// Scenario outputs, server → client.
@@ -177,6 +205,8 @@ pub fn download_size(o: &EncOutputs) -> u64 {
         + size(&o.budget_hour)
 }
 
-fn size<T: serde::Serialize + Versionize + Named>(x: &T) -> u64 {
+fn size<T: serde::Serialize + Versionize + Named>(
+    x: &T,
+) -> u64 {
     safe_serialized_size(x).expect("serialization failed")
 }
