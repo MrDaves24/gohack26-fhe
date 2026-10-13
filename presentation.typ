@@ -217,6 +217,45 @@
   That's all the maths you need.
 ]
 
+#[
+#set text(size: 0.8em)
+#align(center)[
+  #text(size: 1.3em)[$"Dec"("Enc"(a) plus.o "Enc"(b)) = a + b$]
+  #v(0.2em)
+  The server computes on ciphertexts; only the key holder can read the result.
+]
+#v(0.8em)
+// Noise level of one ciphertext through a few operations (illustrative, not measured).
+#let steps = (
+  ([fresh], 15%, c-plain),
+  ([$plus.o$], 25%, c-plain),
+  ([$plus.o$], 38%, c-plain),
+  ([$times.o$], 88%, c-plain),
+  ([bootstrap], 15%, c-fhe),
+  ([$plus.o$], 25%, c-plain),
+  ([$times.o$], 55%, c-plain),
+)
+#let h = 5em
+#align(center, block(width: 75%, {
+  place(top, dy: -0.1em, line(length: 100%, stroke: (paint: red.darken(20%), dash: "dashed", thickness: 1pt)))
+  place(top + right, dy: -1.2em, text(size: 0.8em, fill: red.darken(20%))[too much noise: decryption fails])
+  grid(
+    columns: steps.len(),
+    column-gutter: 1fr,
+    row-gutter: 0.4em,
+    align: center + bottom,
+    ..steps.map(((_, lvl, c)) => box(width: 1.6em, height: h, align(bottom, box(width: 100%, height: lvl, fill: c, radius: (top: 2pt))))),
+    ..steps.map(((l, _, _)) => text(size: 0.85em, l)),
+  )
+}))
+#align(center, text(size: 0.75em, fill: gray.darken(20%))[noise in one ciphertext (illustration)])
+#v(0.6em)
+#align(center)[
+  TFHE has two moves: *cheap linear algebra*, and a *lookup table that also resets the noise*
+  (bootstrapping). Everything else is built from those.
+]
+]
+
 = Rewriting code
 
 == Init
