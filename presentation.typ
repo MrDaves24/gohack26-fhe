@@ -579,6 +579,41 @@
 
 #speaker-note[
   FHE vs TEE vs MPC vs ZK. "In theory the Holy Grail, in practice hell." QR code to the repo.
+  Each option trades a trust assumption for a cost; FHE trusts nothing but the math, so it costs most.
+  Real systems mix them: Zama = FHE + ZK (inputs) + threshold MPC (decryption) in AWS enclaves.
+  Sources: research/alternatives.md.
+]
+
+#[
+#set text(size: 0.62em)
+#grid(
+  columns: (1.6fr, 1fr),
+  column-gutter: 1.5em,
+  align: horizon,
+  table(
+    columns: (auto, 1fr, auto, auto),
+    stroke: (x, y) => if y > 0 { (top: 0.5pt + gray.lighten(40%)) },
+    inset: (x: 0.4em, y: 0.55em),
+    fill: (x, y) => if y == 4 { cyan.lighten(85%) },
+    table.header[][*You must trust*][*Main cost*][*Integrity*],
+    [*TEE*], [the chip vendor, and whoever has physical access], [≈ 0–10 %], [yes],
+    [*MPC*], [that the parties don't collude], [network], [depends],
+    [*ZK*], [nobody, but the prover holds the data], [$10^4$–$10^6 times$], [yes],
+    [*FHE*], [*only the math*], [*≈ $10^9 times$* (our meter)], [*no*],
+  ),
+  [
+    #text(size: 1.25em)[*FHE is worth it when*]
+    - you can't trust the server, its hardware, or a second party;
+    - the computation is small and fixed: a lookup, a match, a few comparisons;
+    - seconds and megabytes are acceptable.
+    #v(0.4em)
+    Real systems mix them: Zama = FHE + ZK + MPC + TEE.
+  ],
+)
+#v(0.8em)
+#align(center, text(size: 1.5em)[
+  In theory, the Holy Grail. In practice, hell, unless your problem is small.
+])
 ]
 
 #focus-slide[
