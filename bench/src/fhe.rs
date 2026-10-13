@@ -20,6 +20,8 @@ pub struct EncInputs {
     pub limit: FheUint16,
     pub tier: FheUint8,
     pub budget: FheUint32,
+    /// Division slide: the hour count, as a ciphertext.
+    pub n: FheUint32,
 }
 
 pub struct EncOutputs {
@@ -48,6 +50,7 @@ pub fn encrypt(i: &Inputs, ck: &ClientKey) -> EncInputs {
         limit: FheUint16::encrypt(i.limit, ck),
         tier: FheUint8::encrypt(i.tier, ck),
         budget: FheUint32::encrypt(i.budget, ck),
+        n: FheUint32::encrypt(N as u32, ck),
     }
 }
 
@@ -66,8 +69,13 @@ pub fn total(readings: &[FheUint16]) -> FheUint32 {
 }
 
 pub fn average(total: &FheUint32) -> FheUint32 {
-    // divide by a public value: cheap. By a ciphertext: very expensive
+    // divide by a public value: far cheaper than by a ciphertext
     total / N as u32
+}
+
+/// Division slide: the same average, when the count is secret too.
+pub fn average_secret_n(total: &FheUint32, n: &FheUint32) -> FheUint32 {
+    total / n
 }
 
 pub fn peak_count(readings: &[FheUint16], limit: &FheUint16) -> FheUint8 {

@@ -155,6 +155,9 @@ fn main() -> std::io::Result<()> {
             plain::gt_u8(black_box(inputs.a), black_box(inputs.b))
         });
         let expected = run_plain(&mut t, &inputs);
+        let expected_avg_n = t.plain("average_secret_n", || {
+            plain::average_secret_n(black_box(expected.total), black_box(N as u32))
+        });
         assert!(
             expected.peak_count > 0 && expected.budget_hour < N as u8,
             "boring day, try another seed: {expected:?}"
@@ -171,6 +174,9 @@ fn main() -> std::io::Result<()> {
         let enc = t.fhe("encrypt", || fhe::encrypt(&inputs, &ck));
         let enc_gt = t.fhe("gt_u8", || fhe::gt_u8(&enc.a, &enc.b));
         let enc_out = run_fhe(&mut t, &enc);
+        let enc_avg_n = t.fhe("average_secret_n", || {
+            fhe::average_secret_n(&enc_out.total, &enc.n)
+        });
         let got = t.fhe("decrypt", || fhe::decrypt(&enc_out, &ck));
         if run == 0 {
             sizes.push(("upload", fhe::upload_size(&enc)));
@@ -181,6 +187,11 @@ fn main() -> std::io::Result<()> {
         assert_eq!(
             got_gt, expected_gt,
             "FHE and plain disagree on gt_u8 (run {run})"
+        );
+        let got_avg_n: u32 = enc_avg_n.decrypt(&ck);
+        assert_eq!(
+            got_avg_n, expected_avg_n,
+            "FHE and plain disagree on average_secret_n (run {run})"
         );
         assert_eq!(got, expected, "FHE and plain disagree (run {run})");
         eprintln!("run {}/{} ok", run + 1, args.runs);
@@ -230,6 +241,6 @@ fn print_medians(rows: &[(&str, &str, usize, f64)]) {
             .map(|r| r.3)
             .collect();
         v.sort_by(f64::total_cmp);
-        println!("{imp:>5} {step:<13} {:>16.2} ns", v[v.len() / 2]);
+        println!("{imp:>5} {step:<16} {:>16.2} ns", v[v.len() / 2]);
     }
 }

@@ -23,7 +23,7 @@ bench/               # Rust crate: plain vs FHE smart meter + benchmark harness
 
 - Pin **`tfhe = { version = "=1.8.1", ... }`**. Do not upgrade. Check the API and required feature flags against docs.rs for **1.8.1** specifically; don't rely on memory of older/newer TFHE-rs APIs.
 - Prefer the high-level API (`FheUint8/16/32`, `FheBool`, `ConfigBuilder`, `generate_keys`, `set_server_key`).
-- Step names are fixed and shared across code, slides and charts: `keygen`, `encrypt`, `total`, `average`, `peak_count`, `peak_mask`, `tariff_lookup`, `bill`, `budget_hour`, `decrypt`, plus `gt_u8` (single comparison, for the hook slide) and, for the optional compression variant, `expand` and `compress`.
+- Step names are fixed and shared across code, slides and charts: `keygen`, `encrypt`, `total`, `average`, `peak_count`, `peak_mask`, `tariff_lookup`, `bill`, `budget_hour`, `decrypt`, plus `gt_u8` (single comparison, for the hook slide), `average_secret_n` (same average divided by an encrypted count, for the division slide) and, for the optional compression variant, `expand` and `compress`.
 - Each FHE step should be a small, readable function: its body is what goes on the snippet slides. Favor clarity over cleverness; add a short comment naming the FHE workaround (e.g. `// no branch: compute both, select`).
 - Step code (`plain.rs`, `fhe.rs`) is C-like, almost pseudocode: index `for` loops, `if`, explicit types. No iterator chains or clever Rust; the audience doesn't read Rust.
 - Plain baseline: wrap inputs/outputs in `std::hint::black_box` *inside* the timed closure, or the compiler hoists the work out of the loop.

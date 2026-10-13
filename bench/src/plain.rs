@@ -23,6 +23,11 @@ pub fn average(total: u32) -> u32 {
     total / N as u32
 }
 
+/// Comparison for the division slide: the same average, divided by a secret count.
+pub fn average_secret_n(total: u32, n: u32) -> u32 {
+    total / n
+}
+
 pub fn peak_count(readings: &[u16; N], limit: u16) -> u8 {
     let mut count: u8 = 0;
     for h in 0..N {
