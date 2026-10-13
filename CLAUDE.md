@@ -36,7 +36,7 @@ bench/               # Rust crate: plain vs FHE smart meter + benchmark harness
 ## Slides (Typst)
 
 - Typst ≥ 0.15, `@preview/touying:0.8.0`, `themes.metropolis`, 16:9 only.
-- Custom header with a rainbow progress bar under the gray header (`header-progress` helper, `footer-progress: false`). Keep it.
+- Custom header with a **blue** progress bar (not rainbow) under the gray header (`header-progress` helper, `footer-progress: false`). Keep it.
 - Focus slide at the end: big "Thanks for your attention", smaller "Any question?".
 - Speaker notes via `#speaker-note[...]` (exported to `.pdfpc`).
 - Charts read `bench/results/*.csv` directly (`csv()` / `json()` in Typst) so re-running the benchmark updates the slides. Per-step chart: plain vs FHE, log scale. Plain steps are sub-nanosecond: present them as a reference, not as precise figures.
@@ -48,4 +48,5 @@ bench/               # Rust crate: plain vs FHE smart meter + benchmark harness
 - Language: English for code, slides and docs (Pascal is French-speaking; conversation may switch to French).
 - ~20 min talk: slides should be sparse. One idea per slide; code snippets ≤ ~12 lines per side.
 - Facts about deployments, papers and scheme properties must be verified against sources before going on a slide (see "To verify" in `PLAN.md`).
+- Research notes live in `research/<topic>.md`. **Every documented claim carries its source** (link); unverified claims are marked UNVERIFIED.
 - Scope cuts over schedule slips: if behind, drop a snippet rather than rehearsal time.

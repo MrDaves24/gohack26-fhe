@@ -7,3 +7,4 @@ claude*.sh
 **/results/*
 !bench/results/*.csv
 !bench/results/meta.json
+build/
