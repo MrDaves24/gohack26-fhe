@@ -43,6 +43,23 @@
 
 == About me
 
+#slide(composer: (3fr, 2fr))[
+  #text(size: 1.4em, weight: "regular")[Pascal Perrenoud]
+
+  SaaS developer & consultant
+
+  #set text(size: 0.85em)
+  - MSc HES in cybersecurity
+  - Applied research in cryptography
+
+  #v(1em)
+  #set text(size: 0.8em, fill: gray.darken(30%))
+  #link("https://codexa.swiss")[codexa.swiss] \
+  #link("mailto:pascal@codexa.swiss")[pascal\@codexa.swiss]
+][
+  #image("assets/codexa-logo.png", width: 100%)
+]
+
 #outline-slide(title: [Roadmap], level: 1, numbered: (false,), vspace: (0em,))
 
 = FHE in one slide
