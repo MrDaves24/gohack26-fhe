@@ -510,6 +510,39 @@
   [The memory access would reveal the index: visit *every* slot. O(1) becomes O(n).],
 )
 
+== It's a circuit
+
+#speaker-note[
+  (0:30) \
+  Recap of the 3 snippets: one rule → nothing may depend on secret data except the values \
+  · if → mux (select) · loop → fixed, unrolled · table[i] → mux over every entry \
+  · fixed widths, fixed outputs (mask, not list) \
+  FPGA / VHDL / Verilog people: you already know the rules \
+  Difference: a gate = ns in hardware, ms in FHE (a bootstrap) \
+  If asked "how do I write this?": backup "Compiling code to FHE" (Google's transpiler used a hardware synthesis tool) \
+  Sources: research/operations.md
+]
+
+#[
+#set text(size: 0.75em)
+#table(
+  columns: (1fr, 1.3fr, 1.3fr),
+  stroke: (x, y) => if y > 0 { (top: 0.5pt + gray.lighten(40%)) },
+  inset: (x: 0.5em, y: 0.6em),
+  table.header[*Plain code*][*FHE*][*Hardware (FPGA)*],
+  [`if` on a value], [compute both, `select`], [a multiplexer],
+  [`while` / `break`], [fixed number of iterations], [an unrolled loop],
+  [`table[i]`], [touch every slot], [a mux over all entries],
+  [`u32` "just in case"], [every bit costs time and size], [every bit costs area],
+  [return a list], [fixed-size output, a mask], [fixed output ports],
+)
+#v(0.6em)
+#align(center, text(size: 1.2em)[
+  If you have written VHDL or Verilog, you already know the rules. \
+  #text(size: 0.8em, fill: gray.darken(20%))[Only the gates are slower: milliseconds instead of nanoseconds.]
+])
+]
+
 = The overhead
 
 #section-title(
@@ -1024,6 +1057,37 @@
   The server touches *every* row (skipping one would reveal $i$): O(n), like our *Secret index*. \
   #text(size: 0.85em, fill: gray.darken(20%))[Only ciphertext × plaintext and additions: no bootstrapping needed.]
 ]
+]
+
+== Compiling code to FHE
+
+#speaker-note[
+  Google's FHE transpiler (2021): C++ → XLS (Google's hardware synthesis tool) → gates → TFHE \
+  → literally "compile your program to a circuit" \
+  Successor: HEIR (MLIR compiler, several schemes and backends). Zama: Concrete compiler (Python) \
+  Sources: research/operations.md (arXiv 2106.07893)
+]
+
+#[
+#set text(size: 0.75em)
+#align(center, grid(
+  columns: 7,
+  column-gutter: 0.6em,
+  align: horizon,
+  party[C++][plain code],
+  text(fill: navy, size: 1.4em)[→],
+  party[XLS][hardware synthesis (HLS)],
+  text(fill: navy, size: 1.4em)[→],
+  party[Circuit][logic gates],
+  text(fill: navy, size: 1.4em)[→],
+  party[TFHE][each gate = a bootstrap],
+))
+#v(1em)
+- Google's FHE transpiler (2021) compiled ordinary C++ into FHE code by going through *a hardware synthesis tool*, then running every gate with TFHE.
+- "Write normal code, get a circuit" is how FHE compilers work: Google's successor *HEIR* (several schemes), Zama's *Concrete*.
+- The snippets we wrote by hand are the kind of rewrite such a compiler does for you.
+#v(0.3em)
+#text(size: 0.8em, fill: gray.darken(20%))[Gorantala et al., "A General Purpose Transpiler for Fully Homomorphic Encryption", arXiv 2106.07893.]
 ]
 
 == Why don't more cores help?

@@ -92,3 +92,27 @@ TFHE-rs also has a dedicated multi-operand sum (`sum_ciphertexts_parallelized` i
 [sum.rs](https://docs.rs/crate/tfhe/1.8.1/source/src/integer/server_key/radix_parallel/sum.rs), exposed as `std::iter::Sum` for
 `FheUint` in [high_level_api/integers/unsigned/ops.rs](https://docs.rs/crate/tfhe/1.8.1/source/src/high_level_api/integers/unsigned/ops.rs)),
 a candidate for the "naive vs optimized" could-do in `PLAN.md`. Not measured.
+
+## FHE code is a circuit (checked 2026-10-17)
+
+- The server cannot see any value, so nothing may depend on the data except the values
+  themselves: no data-dependent branches, loop counts, memory addresses or output sizes.
+  That is a data-oblivious *circuit*, the same discipline as hardware design (HDL / FPGA):
+  `if` → multiplexer (`select`), loops → unrolled with a fixed count, `table[i]` → mux over
+  all entries, fixed widths, fixed outputs.
+- FHE is defined as evaluating circuits: Gentry, "Fully homomorphic encryption using ideal
+  lattices", STOC 2009 ([DOI 10.1145/1536414.1536440](https://doi.org/10.1145/1536414.1536440)),
+  see `research/history-and-bottlenecks.md`. Gate-level TFHE bootstraps once per logic gate
+  ([Gouert et al., PoPETs 2023](https://petsymposium.org/popets/2023/popets-2023-0075.pdf),
+  see `research/schemes.md`).
+- Google's FHE transpiler turns C++ into FHE code through a hardware synthesis toolchain:
+  "Our transpiler builds on Google's open-source XLS SDK … and uses an off-the-shelf FHE
+  library, TFHE" (Gorantala et al., "A General Purpose Transpiler for Fully Homomorphic
+  Encryption", 2021, [arXiv 2106.07893](https://arxiv.org/abs/2106.07893)). XLS is Google's
+  high-level synthesis toolkit for hardware ([github.com/google/xls](https://github.com/google/xls)).
+- The transpiler's repository now points to its successor, **HEIR**, an MLIR-based FHE
+  compiler that "support[s] multiple FHE schemes and high-performance backends"
+  ([repo README](https://github.com/google/fully-homomorphic-encryption), [HEIR](https://github.com/google/heir)).
+- Zama's equivalent: Concrete, "TFHE Compiler that converts python programs into FHE equivalent" ([github.com/zama-ai/concrete](https://github.com/zama-ai/concrete)).
+- Difference with an FPGA: a gate costs nanoseconds in hardware, a bootstrap costs
+  milliseconds (`research/schemes.md`): same design rules, far slower gates.

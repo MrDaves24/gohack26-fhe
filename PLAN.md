@@ -42,6 +42,7 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | 7 | Branching | 1:00 | `if` on a secret doesn't compile (`FheBool` is not `bool`): show the Rust compile error, then compute both sides and select. |
 | 8 | Loops | 1:00 | No early exit (iteration count leaks): loop the maximum, or rethink the algorithm (`budget_hour` counts hours within budget). |
 | 9 | Secret index | 1:00 | `TARIFFS[tier]` leaks through memory access: visit every slot, O(1) → O(n). |
+| 9b | It's a circuit | 0:30 | Recap of the snippets (decided 17 Oct): plain → FHE → FPGA table (if → mux, fixed loops, mux over every entry, fixed widths, fixed outputs). "If you have written VHDL or Verilog, you already know the rules"; gates in ms instead of ns. |
 | | **② The overhead** | | |
 | — | Section title | — | "Benchmarking a real example" / "Using the snippets we saw". |
 | 12 | Smart meter | 2:00 | Scenario in pseudo-code (named steps), pipeline diagram client ↔ server: 55 B in, 3.6 MB up, 1.5 MB down, 181 MB server key once; plus one line on compression if measured. One line: the output is a fixed mask, never a list (the cut "variable output" snippet). Code NOT shown (it's on GitHub). |
@@ -55,9 +56,9 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | | **Takeaway** | | |
 | 17 | When is FHE worth it? | 1:30 | FHE vs TEE / MPC / ZKP. Thesis line again. QR code → GitHub repo. |
 | 18 | Thanks | — | Focus slide: "Thanks for your attention" / "Any question?" |
-| — | Backup | — | Li & Micciancio · Division (public vs encrypted divisor) · Deployments in detail · How does Apple's lookup work? (PIR) · Scheme comparison · Why not MPC or a TEE? · Why don't more cores help? · Why is an encrypted byte 66 KB? · How is one block encrypted? (LWE) · How does select work? |
+| — | Backup | — | Li & Micciancio · Division (public vs encrypted divisor) · Deployments in detail · How does Apple's lookup work? (PIR) · Compiling code to FHE (Google's transpiler via XLS, HEIR, Concrete) · Scheme comparison · Why not MPC or a TEE? · Why don't more cores help? · Why is an encrypted byte 66 KB? · How is one block encrypted? (LWE) · How does select work? |
 
-Total: 20:30 (17 Oct: background two slides +0:30; Division and Bit width cut −2:00; schemes −0:30, Apple deep dive +1:30, acceleration +1:00). The run-through decides what to trim.
+Total: 21:00 (17 Oct: circuit recap +0:30; background two slides +0:30; Division and Bit width cut −2:00; schemes −0:30, Apple deep dive +1:30, acceleration +1:00). The run-through decides what to trim.
 
 ## Snippet catalogue
 
