@@ -729,6 +729,43 @@
 ])
 ]
 
+== Making FHE faster
+
+#speaker-note[
+  (1:00) \
+  Our gap: ≈10^9 (9 orders of magnitude). How much can hardware win back? \
+  · GPU, 8×H100 (Zama, measured): FheUint8 compare 4.85 ms vs 41 ms on my laptop ≈ 8× \
+  · FPGA, Zama HPU (AMD V80, measured): ≈ 8×H100 on 64-bit ops \
+  · ASIC, Intel Heracles (DARPA DPRIVE, ISSCC 2026): 1,000–5,500× vs Xeon, research chip, no product \
+  · ASIC, Niobium: 1,000–5,000×, vendor claim, no date \
+  · algorithms: one bootstrap 690 ms (2015) → 13 ms (2016) → < 1 ms on a GPU today \
+  No FHE chip on sale yet (as far as we found). DPRIVE goal "within 10× of plaintext": no public result \
+  Maturity signal: ISO/IEC 28033-2 published Jan 2026 \
+  Surprise if asked: on small types Zama's 192-core CPU beats 8×H100 on throughput; GPU wins on latency \
+  Sources: research/acceleration.md (Zama numbers: current docs, not pinned to 1.8.1)
+]
+
+#[
+#set text(size: 0.7em)
+#table(
+  columns: (auto, 1.4fr, auto, 1fr),
+  stroke: (x, y) => if y > 0 { (top: 0.5pt + gray.lighten(40%)) },
+  inset: (x: 0.5em, y: 0.55em),
+  align: (left, left, right, left),
+  table.header[*Approach*][*Example*][*Speed-up*][*Status*],
+  [*GPU*], [8× Nvidia H100 (Zama): `a > b` on bytes in 4.85 ms, vs 41 ms on my laptop], [≈ 8×], [measured],
+  [*FPGA*], [Zama HPU on one AMD board: about as fast as 8× H100], [≈ 8×], [measured],
+  [*ASIC*], [Intel Heracles (DARPA DPRIVE), vs a Xeon, on FHE primitives], [1 000–5 500×], [research chip, no product],
+  [*ASIC*], [Niobium], [1 000–5 000×], [vendor claim, no date],
+  [*Algorithms*], [one bootstrap: 690 ms (2015) → 13 ms (2016) → under 1 ms on a GPU today], [], [measured],
+)
+#v(0.6em)
+#align(center, text(size: 1.3em)[
+  Hardware closes about *3* of our *9* orders of magnitude, on paper. \
+  #text(size: 0.75em, fill: gray.darken(20%))[No dedicated FHE chip on sale yet, as far as we found.]
+])
+]
+
 == Weird pitfalls
 
 #speaker-note[
