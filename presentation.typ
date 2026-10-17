@@ -741,7 +741,7 @@
     fill: (x, y) => if y == 4 { cyan.lighten(85%) },
     table.header[][*You must trust*][*Main cost*][*Integrity*],
     [*TEE*], [the chip vendor, and whoever has physical access], [≈ 0–10 %], [yes],
-    [*MPC*], [that the parties don't collude], [network], [depends],
+    [*MPC*], [that the parties don't collude], [network; heavy setup against cheaters], [depends],
     [*ZKP*], [nobody, but the prover holds the data], [$10^4$–$10^6 times$], [yes],
     [*FHE*], [*only the math*], [*≈ $10^9 times$* (our meter)], [*no*],
   ),
@@ -830,12 +830,16 @@
 
 #speaker-note[
   TEE overhead: under 7 % for LLM inference on H100 (arXiv 2409.03992); up to 60 % for heavy network I/O on confidential VMs (SIGMETRICS 2025). \
-  Intel and AMD consider physical attacks out of scope (Battering RAM). MPC: "the bottleneck is communication" (Heath & Kolesnikov, CRYPTO 2020). \
+  Intel and AMD consider physical attacks out of scope (Battering RAM). \
+  MPC is not "FHE + network": \
+  · honest parties (semi-honest): almost no crypto online, cost = bytes and round trips per multiplication/comparison \
+  · cheating parties (malicious, SPDZ): preprocessing uses somewhat-HE → FHE-like CPU cost (13 ms vs 0.05 ms per mult, SPDZ CRYPTO 2012) \
+  · logistic regression: 0.62 s / 62 MB (semi-honest 3PC) vs 2337 s / 226 GB (malicious MASCOT), MP-SPDZ CCS 2020 \
   Sources: research/alternatives.md.
 ]
 
 #[
-#set text(size: 0.7em)
+#set text(size: 0.63em)
 #grid(
   columns: (1fr, 1fr),
   column-gutter: 2em,
@@ -852,7 +856,9 @@
     *MPC* (secure multi-party computation)
     - The data is split between several servers; no single one sees it.
     - You trust that they *don't collude*: you need two organisations.
-    - The cost is network traffic and round trips, not computation.
+    - Honest parties: cheap on CPU, shares as small as the data; every multiplication or comparison costs messages and round trips.
+    - Against cheating parties: a heavy *setup* phase, built with homomorphic encryption: 13 ms vs 0.05 ms per multiplication (SPDZ).
+    - Same task, two protocols: 0.6 s / 62 MB vs 39 min / 226 GB.
     - Used for the Danish sugar beet auction (2008), COVID exposure statistics (Prio), Firefox telemetry.
   ],
 )
