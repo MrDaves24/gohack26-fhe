@@ -1,5 +1,5 @@
 # GOHack26: FHE - Usage and limitations
-In theory, FHE is the Graal of cryptography and confidential computing. In practice, it's hell.
+In theory, FHE is the Holy Grail of cryptography and confidential computing. In practice, a long quest.
 
 # Plan
 1. Hook (2min) : the marketing of FHE, the magic it can do
