@@ -266,11 +266,17 @@
 == How FHE works
 
 #speaker-note[
-  (1:00) One equation: decrypting the result of an operation on ciphertexts gives the result on the plaintexts. The server never needs the key to read. \
-  Every ciphertext carries noise, that is what makes it secure. Each operation adds noise; past a limit, decryption gives garbage. \
-  Bootstrapping resets the noise, and in TFHE it applies a lookup table at the same time. So TFHE has two moves: cheap linear algebra, and a lookup that also cleans. \
-  The server bootstraps with the server key: the secret key, encrypted under itself. That is why it must be shipped, and why it is big (next section). \
-  Sources: research/operations.md, research/ciphertext-size.md.
+  (1:00) \
+  Equation: compute on ciphertexts, decrypt → same result as in plain \
+  · "=" is exact for TFHE, BFV/BGV (rounding removes the noise) \
+  · CKKS: "≈", the noise stays in the result \
+  NOISE (on screen, not written: say it) \
+  · every ciphertext carries noise: that is what makes it secure \
+  · every operation adds noise; × much more than + \
+  · past the red line: decryption gives garbage \
+  Bootstrap: resets the noise; in TFHE also applies a lookup → "two moves" \
+  Server key = secret key encrypted under itself → lets the server bootstrap \
+  Sources: research/operations.md, research/ciphertext-size.md
 ]
 
 #[
