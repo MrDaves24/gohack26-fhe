@@ -721,9 +721,9 @@
 
 #speaker-note[
   (1:30) Every option trades a trust assumption for a cost. \
-  TEE: almost free, but you trust the chip vendor, and physical attacks keep breaking them (TEE.fail 2026, under 1000 dollars of hardware). MPC: you trust that the parties don't collude; the cost is network. ZK: proves a computation, but the prover holds the data. \
+  TEE: almost free, but you trust the chip vendor, and physical attacks keep breaking them (TEE.fail 2026, under 1000 dollars of hardware). MPC: you trust that the parties don't collude; the cost is network. ZKP: proves a computation, but the prover holds the data. \
   FHE: trust only the math. Price: about 10^9, and no integrity. \
-  So FHE is worth it when nobody can be trusted, the computation is small and fixed, and seconds are fine. Real systems mix them: Zama is FHE plus ZK plus MPC plus TEE. \
+  So FHE is worth it when nobody can be trusted, the computation is small and fixed, and seconds are fine. Real systems mix them: Zama is FHE plus ZKP plus MPC plus TEE. \
   Close with the thesis line. Point at the QR code. \
   Sources: research/alternatives.md.
 ]
@@ -742,7 +742,7 @@
     table.header[][*You must trust*][*Main cost*][*Integrity*],
     [*TEE*], [the chip vendor, and whoever has physical access], [≈ 0–10 %], [yes],
     [*MPC*], [that the parties don't collude], [network], [depends],
-    [*ZK*], [nobody, but the prover holds the data], [$10^4$–$10^6 times$], [yes],
+    [*ZKP*], [nobody, but the prover holds the data], [$10^4$–$10^6 times$], [yes],
     [*FHE*], [*only the math*], [*≈ $10^9 times$* (our meter)], [*no*],
   ),
   [
@@ -751,7 +751,7 @@
     - the computation is small and fixed: a lookup, a match, a few comparisons;
     - seconds and megabytes are acceptable.
     #v(0.4em)
-    Real systems mix them: Zama = FHE + ZK + MPC + TEE.
+    Real systems mix them: Zama = FHE + ZKP + MPC + TEE.
   ],
 )
 #v(0.8em)

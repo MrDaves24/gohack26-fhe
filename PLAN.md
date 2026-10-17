@@ -51,7 +51,7 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | 15 | Schemes & deployments | 2:00 | "No best scheme, only the one that hurts least": batching makes sums nearly free. Real deployments = small targeted lookups: "one encrypted question, one shallow circuit, plus a lot of non-HE plumbing" (`research/deployments.md`). |
 | 16 | Weird pitfalls | 1:00 | No integrity; shared decryptions can leak the key (Li & Micciancio). Mitigation **depends on the scheme**: almost free for TFHE since 2025, expensive for CKKS, worse than nothing if sized for the average case (`research/attacks.md`). No side channels. |
 | | **Takeaway** | | |
-| 17 | When is FHE worth it? | 1:30 | FHE vs TEE / MPC / ZK. Thesis line again. QR code → GitHub repo. |
+| 17 | When is FHE worth it? | 1:30 | FHE vs TEE / MPC / ZKP. Thesis line again. QR code → GitHub repo. |
 | 18 | Thanks | — | Focus slide: "Thanks for your attention" / "Any question?" |
 | — | Backup | — | Li & Micciancio · Division (public vs encrypted divisor) · Scheme comparison · Why not MPC or a TEE? · Why don't more cores help? · Why is an encrypted byte 66 KB? · How is one block encrypted? (LWE) · How does select work? |
 
