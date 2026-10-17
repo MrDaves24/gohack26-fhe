@@ -640,12 +640,31 @@
 == Schemes & deployments
 
 #speaker-note[
-  (2:00) There is no best scheme, only the one that hurts least for your program. \
-  TFHE: any function of a small value, so comparisons and lookups are fine; sums and wide integers hurt. \
-  BFV and BGV: thousands of values per ciphertext, one addition adds them all; comparisons hurt. Our 24 readings fit in one ciphertext. CKKS: same on approximate reals, the ML scheme. \
-  Who uses it: Apple (BFV, encrypted lookups for Caller ID, Photos, Mail), Microsoft Edge (leaked-password match), Zama (TFHE on Ethereum, about 20 transactions/s on CPU). \
-  Apple and Microsoft do not even bootstrap: one shallow computation, plus a lot of non-FHE plumbing (relays, sharding, differential privacy). \
-  Sources: research/schemes.md, research/deployments.md.
+  (2:00) \
+  No best scheme: the one that hurts least for your program \
+  · TFHE: lookups, comparisons OK; sums, wide ints hurt \
+  · BFV/BGV: thousands of values per ciphertext, sums ≈ free; comparisons hurt \
+  · CKKS: same on approximate reals → ML \
+  · our total: 6.8 s in TFHE; 24 readings = 1 BFV ciphertext \
+  DEPLOYMENTS (for questions) \
+  Apple, iOS 18+ \
+  · BFV, leveled = no bootstrapping → strictly SHE, not FHE \
+  · PIR: Live Caller ID, Mail logos, parental filter, URL filter \
+  · Photos (Enhanced Visual Search): encrypted dot products on 8-bit embeddings + differential privacy \
+  · + Oblivious HTTP (hides IP) + Privacy Pass (anonymous auth) \
+  · lib example: 100k rows, 28 KB query, 23 KB answer, 681 KB key, ≈51 ms server \
+  · open source: swift-homomorphic-encryption \
+  Microsoft Edge Password Monitor (2021) \
+  · BFV via SEAL (scheme from a secondary source), no bootstrapping → SHE \
+  · encrypted "credential in leak DB?" → encrypted true/false \
+  · 4 billion leaked credentials, sharded by username hash → ≈60k per query; + OPRF \
+  · feature still exists; still HE today: UNVERIFIED (only 2021 source) \
+  Zama Protocol (Ethereum mainnet, Dec 2025) \
+  · TFHE-rs, bootstrapping → really FHE \
+  · confidential token balances/transfers, ≈20 tx/s on CPU \
+  · + ZKP (inputs) + threshold MPC 13 nodes (decryption) + AWS enclaves \
+  One encrypted question, one shallow circuit, lots of non-FHE plumbing \
+  Sources: research/schemes.md, research/deployments.md
 ]
 
 #[
@@ -673,7 +692,7 @@
     #text(size: 1.3em)[*Who uses it*]
     #v(0.3em)
     - *Apple* (BFV, iOS 18+): Live Caller ID, landmarks in Photos, Mail logos: an encrypted lookup.
-    - *Microsoft Edge* (SEAL): "is this password in a leak?", an encrypted match.
+    - *Microsoft Edge* (BFV, via Microsoft SEAL): "is this password in a leak?", an encrypted match.
     - *Zama* (TFHE, Ethereum, Dec 2025): confidential token balances, about 20 transactions/s on CPU.
     #v(0.4em)
     #align(center)[_One encrypted question, one shallow computation, plus a lot of non-FHE plumbing._]
