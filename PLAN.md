@@ -48,14 +48,16 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | 13 | Timings | 2:00 | Per-step chart, plain vs FHE, log scale; whole day ~30 s vs ~18 ns. Hardware: M4, 4P + 6E cores, fanless, sustained load. |
 | 14 | Where the time goes | 1:30 | Sorted FHE bars, linear: `budget_hour` + `total` ≈ 61% (computed from the CSV). Sums are TFHE's weak spot → leads to ③. |
 | | **③ FHE in the real world** | | |
-| 15 | Schemes & deployments | 2:00 | "No best scheme, only the one that hurts least": batching makes sums nearly free. Real deployments = small targeted lookups: "one encrypted question, one shallow circuit, plus a lot of non-HE plumbing" (`research/deployments.md`). |
+| 15 | No best scheme | 1:30 | "No best scheme, only the one that hurts least": TFHE vs BFV/BGV vs CKKS table; our `total` 6.8 s vs one BFV ciphertext (`research/schemes.md`). Deployments moved out (17 Oct). |
+| 15b | FHE in production: Apple Live Caller ID | 1:30 | Deep dive on one success (decided 17 Oct): one small question (PIR), the right scheme (BFV, no bootstrapping), small numbers (28 KB query, 23 KB answer, ≈51 ms, library example), plumbing around FHE (OHTTP relay, Privacy Pass). Note: requests time out on the network, not the FHE (developer report). Apple/Edge/Zama details: speaker notes + backup "Deployments in detail". |
+| 15c | Making FHE faster | 1:00 | Work in progress: GPU, FPGA/ASIC (Zama HPU, DARPA DPRIVE), algorithms and compilers; measured vs announced vs projected (`research/acceleration.md`, in progress). |
 | 16 | Weird pitfalls | 1:00 | No integrity; shared decryptions can leak the key (Li & Micciancio). Mitigation **depends on the scheme**: almost free for TFHE since 2025, expensive for CKKS, worse than nothing if sized for the average case (`research/attacks.md`). No side channels. |
 | | **Takeaway** | | |
 | 17 | When is FHE worth it? | 1:30 | FHE vs TEE / MPC / ZKP. Thesis line again. QR code → GitHub repo. |
 | 18 | Thanks | — | Focus slide: "Thanks for your attention" / "Any question?" |
-| — | Backup | — | Li & Micciancio · Division (public vs encrypted divisor) · Scheme comparison · Why not MPC or a TEE? · Why don't more cores help? · Why is an encrypted byte 66 KB? · How is one block encrypted? (LWE) · How does select work? |
+| — | Backup | — | Li & Micciancio · Division (public vs encrypted divisor) · Deployments in detail · Scheme comparison · Why not MPC or a TEE? · Why don't more cores help? · Why is an encrypted byte 66 KB? · How is one block encrypted? (LWE) · How does select work? |
 
-Total: 18:30 (17 Oct: background became two slides, +0:30; Division and Bit width cut, −2:00). 1:30 free for what the run-through shows is missing.
+Total: 20:30 (17 Oct: background two slides +0:30; Division and Bit width cut −2:00; schemes −0:30, Apple deep dive +1:30, acceleration +1:00). The run-through decides what to trim.
 
 ## Snippet catalogue
 

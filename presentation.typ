@@ -637,67 +637,96 @@
 
 = FHE in the real world
 
-== Schemes & deployments
+== No best scheme
 
 #speaker-note[
-  (2:00) \
-  No best scheme: the one that hurts least for your program \
+  (1:30) \
+  The scheme decides what is cheap: pick the one that hurts least for your program \
   · TFHE: lookups, comparisons OK; sums, wide ints hurt \
   · BFV/BGV: thousands of values per ciphertext, sums ≈ free; comparisons hurt \
   · CKKS: same on approximate reals → ML \
   · our total: 6.8 s in TFHE; 24 readings = 1 BFV ciphertext \
-  DEPLOYMENTS (for questions) \
-  Apple, iOS 18+ \
-  · BFV, leveled = no bootstrapping → strictly SHE, not FHE \
-  · PIR: Live Caller ID, Mail logos, parental filter, URL filter \
-  · Photos (Enhanced Visual Search): encrypted dot products on 8-bit embeddings + differential privacy \
-  · + Oblivious HTTP (hides IP) + Privacy Pass (anonymous auth) \
-  · lib example: 100k rows, 28 KB query, 23 KB answer, 681 KB key, ≈51 ms server \
-  · open source: swift-homomorphic-encryption \
-  Microsoft Edge Password Monitor (2021) \
-  · BFV via SEAL (scheme from a secondary source), no bootstrapping → SHE \
-  · encrypted "credential in leak DB?" → encrypted true/false \
-  · 4 billion leaked credentials, sharded by username hash → ≈60k per query; + OPRF \
-  · feature still exists; still HE today: UNVERIFIED (only 2021 source) \
-  Zama Protocol (Ethereum mainnet, Dec 2025) \
-  · TFHE-rs, bootstrapping → really FHE \
-  · confidential token balances/transfers, ≈20 tx/s on CPU \
-  · + ZKP (inputs) + threshold MPC 13 nodes (decryption) + AWS enclaves \
-  One encrypted question, one shallow circuit, lots of non-FHE plumbing \
-  Sources: research/schemes.md, research/deployments.md
+  → next: Apple picked BFV for a lookup \
+  Sources: research/schemes.md
 ]
 
 #[
-#set text(size: 0.62em)
+#set text(size: 0.75em)
+#table(
+  columns: (auto, 1fr, 1fr),
+  stroke: (x, y) => if y > 0 { (top: 0.5pt + gray.lighten(40%)) },
+  inset: (x: 0.5em, y: 0.6em),
+  table.header[*Scheme*][*Cheap*][*Expensive*],
+  [*TFHE* \ small integers], [any function of a small value (lookup): compare, select], [sums and wide integers: carries cost bootstraps],
+  [*BFV / BGV* \ exact integers], [thousands of values per ciphertext: one addition adds them all], [comparisons, moving values between slots],
+  [*CKKS* \ approximate reals], [vector arithmetic, ML inference], [comparisons (approximated), exact results],
+)
+#v(0.5em)
+#align(center)[
+  Our `total`: 24 encrypted additions in TFHE, *#secs("total")*. \
+  In BFV the 24 readings fit in *one* ciphertext and add up in a handful of operations.
+]
+]
+
+== FHE in production: Apple Live Caller ID
+
+#speaker-note[
+  (1:30) \
+  iOS 18+: who is calling? → ask a caller-ID server without revealing the number \
+  FLOW \
+  · phone encrypts the number (BFV) \
+  · Oblivious HTTP relay: server doesn't see the IP \
+  · Privacy Pass token: anonymous, but rate-limited \
+  · server: encrypted lookup in the whole table (PIR) → like our Secret index, O(n) \
+  · phone decrypts: name / spam / block \
+  WHY IT WORKS \
+  · one tiny question, one fixed shallow computation \
+  · right scheme: BFV, batched, no bootstrapping (leveled) \
+  · numbers (library example, 100k entries): query 28 KB, answer 23 KB, ≈51 ms server, 681 KB key once \
+  · open source: swift-homomorphic-encryption \
+  FUNNY \
+  · iOS waits ≈1 s; requests time out on the network, not on the FHE (developer report, not Apple) \
+  Also: Mail logos, parental filter, URL filter (PIR), Photos landmarks (encrypted dot products + DP) \
+  Sources: research/deployments.md
+]
+
+#[
+#set text(size: 0.7em)
 #grid(
-  columns: (1.35fr, 1fr),
-  column-gutter: 1.5em,
-  align: top,
-  [
-    #text(size: 1.3em)[*No best scheme, only the one that hurts least*]
-    #v(0.3em)
-    #table(
-      columns: (auto, 1fr, 1fr),
-      stroke: (x, y) => if y > 0 { (top: 0.5pt + gray.lighten(40%)) },
-      inset: (x: 0.4em, y: 0.5em),
-      table.header[*Scheme*][*Cheap*][*Expensive*],
-      [*TFHE* \ small integers], [any function of a small value (lookup): compare, select], [sums and wide integers: carries cost bootstraps],
-      [*BFV / BGV* \ exact integers], [thousands of values per ciphertext: one addition adds them all], [comparisons, moving values between slots],
-      [*CKKS* \ approximate reals], [vector arithmetic, ML inference], [comparisons (approximated), exact results],
+  columns: (1.15fr, 1fr),
+  column-gutter: 2em,
+  align: horizon,
+  {
+    set text(size: 0.95em)
+    grid(
+      columns: (1fr, 2.2fr, 1fr),
+      column-gutter: 0.6em,
+      row-gutter: 1.3em,
+      align: horizon,
+      grid.cell(rowspan: 2, party[iPhone][encrypts the number, decrypts the answer]),
+      arrow([🔒 incoming number], [*28 KB*]),
+      grid.cell(rowspan: 2, party[Caller-ID server][looks it up, blind]),
+      arrow([🔒 name / spam], [*23 KB*], back: true),
     )
-    #v(0.3em)
-    Our `total`: 24 encrypted additions in TFHE, *#secs("total")*. In BFV the 24 readings fit in one ciphertext and add up in a handful of operations.
-  ],
+    v(0.6em)
+    align(center, text(size: 0.85em, fill: gray.darken(20%))[
+      through a relay (hides the IP) and with an anonymous token
+    ])
+  },
   [
-    #text(size: 1.3em)[*Who uses it*]
+    *Why it works*
+    - *One small question*: "who is this number?"
+    - *The right scheme*: BFV, many entries per ciphertext, no bootstrapping
+    - *Small numbers*: ≈ 51 ms on the server for 100 000 entries
+    - *Plumbing around FHE*: relay, anonymous tokens
     #v(0.3em)
-    - *Apple* (BFV, iOS 18+): Live Caller ID, landmarks in Photos, Mail logos: an encrypted lookup.
-    - *Microsoft Edge* (BFV, via Microsoft SEAL): "is this password in a leak?", an encrypted match.
-    - *Zama* (TFHE, Ethereum, Dec 2025): confidential token balances, about 20 transactions/s on CPU.
-    #v(0.4em)
-    #align(center)[_One encrypted question, one shallow computation, plus a lot of non-FHE plumbing._]
+    #text(size: 0.85em, fill: gray.darken(20%))[Sizes and time: Apple's open-source library, example with 100 000 entries.]
   ],
 )
+#v(0.8em)
+#align(center, text(size: 1.15em)[
+  One encrypted question, one shallow computation, plus a lot of non-FHE plumbing.
+])
 ]
 
 == Weird pitfalls
@@ -885,6 +914,37 @@
 #align(center)[
   Choose FHE when there is *one* server and you trust *neither* its hardware *nor* a second party.
 ]
+]
+
+== Deployments in detail
+
+#speaker-note[
+  Apple and Microsoft: leveled BFV, no bootstrapping → strictly "somewhat" HE (Jeremy Kun's survey calls them SHE) \
+  Zama: TFHE with bootstrapping → really FHE, but ≈20 tx/s on CPU; GPU/ASIC throughput = targets \
+  Edge still using HE today: UNVERIFIED (only 2021 source) \
+  Sources: research/deployments.md
+]
+
+#[
+#set text(size: 0.6em)
+#table(
+  columns: (auto, 0.9fr, 1.3fr, 1.3fr, 1fr),
+  stroke: (x, y) => if y > 0 { (top: 0.5pt + gray.lighten(40%)) },
+  inset: (x: 0.45em, y: 0.6em),
+  table.header[][*Scheme*][*Computes*][*Around the FHE*][*Numbers*],
+  [*Apple* \ iOS 18+], [BFV, no bootstrapping \ (somewhat HE)],
+    [encrypted lookups (PIR): Caller ID, Mail logos, parental and URL filters; encrypted dot products for Photos landmarks],
+    [Oblivious HTTP relay, Privacy Pass tokens, differential privacy (Photos)],
+    [28 KB query, 23 KB answer, ≈ 51 ms server (100k entries, library example)],
+  [*Microsoft Edge* \ Password Monitor, 2021], [BFV via SEAL, no bootstrapping \ (somewhat HE)],
+    [encrypted "is this credential in a leak?" → encrypted true / false],
+    [server-side keyed hash (OPRF); 4 billion credentials split by username hash],
+    [≈ 60 000 entries per query],
+  [*Zama Protocol* \ Ethereum, Dec 2025], [TFHE (TFHE-rs), bootstrapping \ (fully HE)],
+    [confidential token balances and transfers],
+    [ZKP on inputs, threshold MPC (13 nodes) for decryption, inside AWS enclaves],
+    [≈ 20 transactions/s on CPU],
+)
 ]
 
 == Why don't more cores help?
