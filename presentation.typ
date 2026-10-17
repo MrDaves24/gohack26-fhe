@@ -175,8 +175,8 @@
   (1:30) Open with the quote: for 30 years FHE was "the never-to-be-found Holy Grail of cryptography" (Micciancio, CACM 2010). Gentry built the first scheme in 2009. \
   The promise: send encrypted data, the cloud computes on it without ever seeing it, you decrypt the result. Medical data, finance, AI on private data. \
   [next] Simplest operation: compare 2 bytes \
-  · encrypted: ~40 ms, ~130 KB of ciphertext \
-  · plain: 2 bytes, ~60 million comparisons in the same time \
+  · encrypted: ≈40 ms, ≈130 KB of ciphertext \
+  · plain: 2 bytes, ≈60 million comparisons in the same time \
   [next] Thesis, slowly: in theory, the Holy Grail. In practice, a long quest. → what the quest looks like in code \
   Sources: Micciancio, CACM 53(3) 2010; Gentry, STOC 2009 (research/history-and-bottlenecks.md). Numbers: gt_u8 in bench/results.
 ]
@@ -445,7 +445,7 @@
   · count of within-hours = index of first hour over (never over: 24 = 24) \
   · example, budget 15: used 5, 10, 16, 23 → plain stops at 2, FHE counts 2 \
   FHE forced us to find a property of the data → no branch, no flag \
-  Most expensive step: ~13 s \
+  Most expensive step: ≈13 s \
   Equality checked on every run (bench asserts plain == FHE)
 ]
 
@@ -998,7 +998,7 @@ The 64-bit word, $Delta = 2^59$:
   select(c, a, b) = c·a + (1−c)·b: both sides always computed, result is a fresh ciphertext.
   TFHE-rs packs c next to each 2-bit block (x = 2·block + c, fits in the 4-bit block thanks
   to the carry space) and bootstraps with a lookup table "block if c else 0".
-  ~3 bootstraps per block with two ciphertexts; one bootstrap of c when both sides are plain
+  ≈3 bootstraps per block with two ciphertexts; one bootstrap of c when both sides are plain
   values (our peak_count). Sources: research/operations.md (tfhe 1.8.1, radix_parallel/cmux.rs).
 ]
 
