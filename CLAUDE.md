@@ -38,7 +38,7 @@ bench/               # Rust crate: plain vs FHE smart meter + benchmark harness
 - Typst ≥ 0.15, `@preview/touying:0.8.0`, `themes.metropolis`, 16:9 only.
 - Codexa brand colors (navy header `#012473`, cyan `#51C2F8` progress bar, coal text). Custom header with a **cyan** progress bar (not rainbow) under the navy header (`header-progress` helper, `footer-progress: false`). Keep it.
 - Focus slide at the end: big "Thanks for your attention", smaller "Any question?".
-- Speaker notes via `#speaker-note[...]` (exported to `.pdfpc`).
+- Speaker notes via `#speaker-note[...]` (exported to `.pdfpc`). Write **hints, not sentences**: keywords and short lists reminding Pascal what to talk about (one item per line, ` \` line breaks), plus timing and sources.
 - Charts read `bench/results/*.csv` directly (`csv()` / `json()` in Typst) so re-running the benchmark updates the slides. Per-step chart: plain vs FHE, log scale. Plain steps are sub-nanosecond: present them as a reference, not as precise figures.
 - Build: `./compile.sh` → `build/presentation-16-9.pdf` + `.pdfpc`. Present with `pdfpc build/presentation-16-9.pdf`.
 - Compile and visually check slides after edits (render a few pages to PNG with `typst compile ... '{p}.png'` if needed).
