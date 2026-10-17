@@ -132,36 +132,50 @@
   str(calc.round(v, digits: if v < 10 { 1 } else { 0 })) + " " + unit
 }
 
-// Log scale from 0.1 ns to 100 s; bars use at most `room` of the width, the rest is
-// for the value label.
-#let log-lo = -1
-#let log-hi = 11
-#let room = 82%
+// Log scale from 0.01 ns to 1000 s, over the full width: room on both sides for the labels.
+#let log-lo = -2
+#let log-hi = 12
 #let log-frac(ns) = (calc.log(ns) - log-lo) / (log-hi - log-lo)
-#let log-ticks = ((0, "1 ns"), (3, "1 µs"), (6, "1 ms"), (9, "1 s"))
+#let log-ticks = ((0, "1 ns"), (3, "1 µs"), (6, "1 ms"), (9, "1 s"), (11, "100 s"))
 
+#let gridlines = for (e, _) in log-ticks {
+  place(dx: log-frac(calc.pow(10.0, e)) * 100%, line(angle: 90deg, length: 100%, stroke: 0.5pt + gray.lighten(50%)))
+}
+#let dot(x, fill) = place(left + horizon, dx: x - 0.35em, circle(radius: 0.35em, fill: fill, stroke: 1.5pt + white))
+// "×8.5·10⁹": the slowdown, i.e. the length of the connector on a log scale.
+#let ratio-label(r) = {
+  let e = calc.floor(calc.log(r))
+  let m = calc.round(r / calc.pow(10.0, e), digits: 1)
+  [×#m · $10^#e$]
+}
+
+// A horizontal bar on a linear scale (frac of 82% of the width) with its value label.
 #let hbar(frac, fill, label) = stack(
   dir: ltr,
   spacing: 0.4em,
-  box(width: frac * room, height: 0.9em, fill: fill, radius: (right: 2pt)),
+  box(width: frac * 82%, height: 0.9em, fill: fill, radius: (right: 2pt)),
   box(height: 0.9em, align(horizon, text(size: 0.8em, label))),
 )
-#let gridlines = for (e, _) in log-ticks {
-  place(dx: log-frac(calc.pow(10.0, e)) * room, line(angle: 90deg, length: 100%, stroke: 0.5pt + gray.lighten(50%)))
-}
 
-// One step: plain and FHE bars on the shared log axis.
-#let timing-row(step) = (
-  align(right + horizon, raw(step)),
-  block(width: 100%, height: 1.9em, {
-    gridlines
-    stack(
-      spacing: 2pt,
-      hbar(log-frac(median("plain", step)), c-plain, fmt-time(median("plain", step))),
-      hbar(log-frac(median("fhe", step)), c-fhe, fmt-time(median("fhe", step))),
-    )
-  }),
-)
+// One step: plain and FHE dots on the shared log axis, joined by the slowdown.
+#let timing-row(step) = {
+  let p = median("plain", step)
+  let f = median("fhe", step)
+  let (xp, xf) = (log-frac(p) * 100%, log-frac(f) * 100%)
+  (
+    align(right + horizon, raw(step)),
+    block(width: 100%, height: 1.7em, {
+      gridlines
+      place(left + horizon, dx: xp, line(length: xf - xp, stroke: 2pt + gray.lighten(30%)))
+      place(left + horizon, dx: xp + (xf - xp) / 2 - 4em, dy: -0.75em,
+        box(width: 8em, align(center, text(size: 0.75em, fill: gray.darken(30%), ratio-label(f / p)))))
+      dot(xp, c-plain)
+      dot(xf, c-fhe)
+      place(left + horizon, dx: xp - 5em, box(width: 4.4em, align(right, text(size: 0.8em, fmt-time(p)))))
+      place(left + horizon, dx: xf + 0.6em, text(size: 0.8em, fmt-time(f)))
+    }),
+  )
+}
 
 #let mb1(item) = str(calc.round(bytes(item) / 1e6, digits: 1)) + " MB"
 
@@ -556,7 +570,8 @@
 == Timings
 
 #speaker-note[
-  (2:00) Careful, log scale: each gridline is a factor 1000. \
+  (2:00) Log scale: each gridline = ×1000 \
+  line length = slowdown factor (label above each line) \
   Plain steps take nanoseconds, FHE steps take seconds: about 10^9 for every step. A whole day: about 30 s against about 20 ns. \
   Setup: MacBook Air M4, fanless, 4 threads, sustained load (it throttles about 20 %). \
   Client side is cheap: keygen 0.5 s, encrypt 11 ms, decrypt under 0.1 ms. The whole cost is on the server. \
@@ -579,7 +594,7 @@
   ..timing-row("day"),
   [],
   block(width: 100%, height: 1em, for (e, l) in log-ticks {
-    place(dx: log-frac(calc.pow(10.0, e)) * room - 1em, text(fill: gray.darken(20%), l))
+    place(dx: log-frac(calc.pow(10.0, e)) * 100% - 1em, text(fill: gray.darken(20%), l))
   }),
 )
 #align(center, text(size: 1.4em)[
