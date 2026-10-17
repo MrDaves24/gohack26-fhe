@@ -789,7 +789,7 @@
     - CKKS decrypts to $m + e$: the noise $e$ comes out *with* the result.
     - The client shares the decrypted result (a statistic, a prediction).
     - Each shared result is a linear equation in the secret key $s$. Enough of them: $s$ by linear algebra.
-    - Worked against SEAL, HElib, PALISADE, HEAAN. Not a bug: IND-CPA does not cover it, so they defined *IND-CPA#super(typographic: false)[D]*.
+    - Worked against SEAL, HElib, PALISADE, HEAAN. Not a bug: IND-CPA does not cover it, so they defined #box[*IND-CPA*#text(size: 0.65em, baseline: -0.55em)[*D*]].
   ],
   [
     *Since then*
