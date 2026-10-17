@@ -324,6 +324,7 @@
   Adding blocks is cheap, but the carries must move from block to block, and each carry is a bootstrap. A comparison is a lookup per pair of blocks, then lookups to combine. \
   Mental model for the rest of the talk: cost ≈ number of bootstraps ≈ number of blocks. More bits, more blocks, slower and bigger. \
   Our gt_u8: about 7 bootstraps, about 40 ms. \
+  Size: 1 byte → 66 KB (u32: 264 KB), every bit costs space and time. If asked why: backups "66 KB", "How is one block encrypted?" \
   Sources: research/operations.md (tfhe 1.8.1 source), research/ciphertext-size.md.
 ]
 
@@ -352,7 +353,9 @@
 #v(0.8em)
 #align(center, text(size: 1.2em)[
   Cost ≈ number of bootstraps ≈ number of blocks. \
-  #text(size: 0.8em)[`u8`: 4 blocks · `u16`: 8 · `u32`: 16]
+  #v(0.3em)
+  Size: *1 byte → #kb("FheUint8")* \
+  #text(size: 0.75em, fill: gray.darken(20%))[`u16`: 8 blocks, #kb("FheUint16") · `u32`: 16 blocks, #kb("FheUint32")]
 ])
 ]
 
@@ -467,50 +470,6 @@
   plain("tariff_lookup", hl: (2,)),
   fhe("tariff_lookup", hl: (4, 5, 6, 7)),
   [The memory access would reveal the index: visit *every* slot. O(1) becomes O(n).],
-)
-
-== Division
-
-#speaker-note[
-  (1:00) average = total / 24. Same code, same result, two costs. \
-  Divide by the public 24: about 2 s. Divide by an encrypted 24: about 15 s, seven times more. \
-  Lesson: keep public what can be public. Every value you encrypt makes everything it touches more expensive.
-]
-
-#snippet(
-  [#plain("average") #plain("average_secret_n")],
-  [
-    #fhe("average", hl: (3,))
-    #text(size: 1.4em)[#secs("average")]
-    #fhe("average_secret_n", hl: (5,))
-    #text(size: 1.4em)[#secs("average_secret_n")]
-  ],
-  [Divide by a *public* value whenever you can.],
-)
-
-== Bit width
-
-#speaker-note[
-  (1:00) A typical day is about 20 000 Wh, but the worst case is 24 × 5000 = 120 000 Wh, beyond u16's 65 535: the sum would wrap silently, so we widen to u32. \
-  In plain Rust widening is free. In FHE every bit costs: 66 KB per encrypted byte, and time grows with the number of blocks. \
-  So choose widths up front, as small as possible, and never widen "just in case". \
-  If asked why 66 KB: backup slides "66 KB" and "How is one block encrypted?".
-]
-
-#snippet(
-  plain("total", hl: (2, 4)),
-  [
-    #fhe("total", hl: (3, 5))
-    #set text(size: 1.3em)
-    #table(
-      columns: 3,
-      stroke: none,
-      [`u8`], [1 B], [#kb("FheUint8")],
-      [`u16`], [2 B], [#kb("FheUint16")],
-      [`u32`], [4 B], [#kb("FheUint32")],
-    )
-  ],
-  [Choose widths up front: a day in `u16` would wrap, and every bit costs size and time.],
 )
 
 = The overhead
@@ -892,6 +851,27 @@
 #v(0.6em)
 #align(center)[The big gains are in GPUs and dedicated chips, not in more CPU cores.]
 ]
+
+== Division
+
+#speaker-note[
+  Backup (cut from the main talk, 17 Oct) \
+  average = total / 24: same result, two costs \
+  · public 24 ≈ 2 s \
+  · encrypted 24 ≈ 15 s, ×7 \
+  keep public what can be public
+]
+
+#snippet(
+  [#plain("average") #plain("average_secret_n")],
+  [
+    #fhe("average", hl: (3,))
+    #text(size: 1.4em)[#secs("average")]
+    #fhe("average_secret_n", hl: (5,))
+    #text(size: 1.4em)[#secs("average_secret_n")]
+  ],
+  [Divide by a *public* value whenever you can.],
+)
 
 == Why is an encrypted byte 66 KB?
 

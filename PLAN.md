@@ -41,8 +41,6 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | 7 | Branching | 1:00 | `if` on a secret doesn't compile (`FheBool` is not `bool`): show the Rust compile error, then compute both sides and select. |
 | 8 | Loops | 1:00 | No early exit (iteration count leaks): loop the maximum, or rethink the algorithm (`budget_hour` counts hours within budget). |
 | 9 | Secret index | 1:00 | `TARIFFS[tier]` leaks through memory access: visit every slot, O(1) → O(n). |
-| 10 | Division | 1:00 | Public 24: 2.1 s vs encrypted 24: 15.7 s (`average` vs `average_secret_n`). |
-| 11 | Bit width | 1:00 | Choose widths up front: 1 byte → 66 KB; summing in u16 would wrap; every bit costs time. |
 | | **② The overhead** | | |
 | 12 | Smart meter | 2:00 | Scenario in pseudo-code (named steps), pipeline diagram client ↔ server: 55 B in, 3.6 MB up, 1.5 MB down, 181 MB server key once; plus one line on compression if measured. One line: the output is a fixed mask, never a list (the cut "variable output" snippet). Code NOT shown (it's on GitHub). |
 | 13 | Timings | 2:00 | Per-step chart, plain vs FHE, log scale; whole day ~30 s vs ~18 ns. Hardware: M4, 4P + 6E cores, fanless, sustained load. |
@@ -53,9 +51,9 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | | **Takeaway** | | |
 | 17 | When is FHE worth it? | 1:30 | FHE vs TEE / MPC / ZK. Thesis line again. QR code → GitHub repo. |
 | 18 | Thanks | — | Focus slide: "Thanks for your attention" / "Any question?" |
-| — | Backup | — | Li & Micciancio · Scheme comparison · Why not MPC or a TEE? · Why don't more cores help? · Why is an encrypted byte 66 KB? · How is one block encrypted? (LWE) · How does select work? |
+| — | Backup | — | Li & Micciancio · Division (public vs encrypted divisor) · Scheme comparison · Why not MPC or a TEE? · Why don't more cores help? · Why is an encrypted byte 66 KB? · How is one block encrypted? (LWE) · How does select work? |
 
-Total: 20:30 since the background became two slides (+0:30). If the first run-through is long, cut a snippet first.
+Total: 18:30 (17 Oct: background became two slides, +0:30; Division and Bit width cut, −2:00). 1:30 free for what the run-through shows is missing.
 
 ## Snippet catalogue
 
@@ -72,7 +70,7 @@ Each snippet slide: normal Rust left, TFHE-rs right, short caption naming the wo
 | variable output | return filtered `Vec` | output length leaks data | fixed-size output + mask, or a count |
 | debugging | `println!` | intermediate values are invisible | needs the client key (server never has it) |
 
-On slides (decided 13 Oct): branch, loop, secret index, division, bit width. Variable output is cut to one line on the Smart meter slide; debugging is a spoken mention at most.
+On slides (decided 13 Oct, cut on 17 Oct to make room): branch, loop, secret index. Division moved to the backup slides; bit width dropped, its size comparison (1 byte → 66 KB) is on *Integers in TFHE*. Variable output is cut to one line on the Smart meter slide; debugging is a spoken mention at most.
 
 ## Scenario: smart meter
 
