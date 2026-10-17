@@ -55,7 +55,7 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | | **Takeaway** | | |
 | 17 | When is FHE worth it? | 1:30 | FHE vs TEE / MPC / ZKP. Thesis line again. QR code → GitHub repo. |
 | 18 | Thanks | — | Focus slide: "Thanks for your attention" / "Any question?" |
-| — | Backup | — | Li & Micciancio · Division (public vs encrypted divisor) · Deployments in detail · Scheme comparison · Why not MPC or a TEE? · Why don't more cores help? · Why is an encrypted byte 66 KB? · How is one block encrypted? (LWE) · How does select work? |
+| — | Backup | — | Li & Micciancio · Division (public vs encrypted divisor) · Deployments in detail · How does Apple's lookup work? (PIR) · Scheme comparison · Why not MPC or a TEE? · Why don't more cores help? · Why is an encrypted byte 66 KB? · How is one block encrypted? (LWE) · How does select work? |
 
 Total: 20:30 (17 Oct: background two slides +0:30; Division and Bit width cut −2:00; schemes −0:30, Apple deep dive +1:30, acceleration +1:00). The run-through decides what to trim.
 

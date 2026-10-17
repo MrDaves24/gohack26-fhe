@@ -681,6 +681,7 @@
   · WHOSE DATA: the provider's database (spam / caller ID), plaintext on its server \
   · only the QUESTION is encrypted (by the phone, its own key) → reverse of the smart meter \
   · ciphertext × plaintext: much cheaper than ciphertext × ciphertext \
+  · HOW: number → hash → position i; selector 0…0 1 0…0 encrypted; Σ selector × every row → only row i survives; O(n) like Secret index (backup slide) \
   · phone decrypts: name / spam / block \
   WHY IT WORKS \
   · one tiny question, one fixed shallow computation \
@@ -985,6 +986,44 @@
     [ZKP on inputs, threshold MPC (13 nodes) for decryption, inside AWS enclaves],
     [≈ 20 transactions/s on CPU],
 )
+]
+
+== How does Apple's lookup work?
+
+#speaker-note[
+  PIR (private information retrieval), Apple's library: MulPIR + cuckoo hash table for keywords \
+  · selector × every row: ciphertext × plaintext, then sums → no bootstrapping needed \
+  · query compressed; server expands it with rotations → needs the phone's evaluation key (≈681 KB, once) \
+  · 2-D grid: query ≈ √n instead of n, one ciphertext × ciphertext multiplication \
+  · always O(n): skipping rows would reveal the index (= Secret index slide) \
+  Sources: research/deployments.md (MulPIR ePrint 2019/1483, SealPIR ePrint 2017/1142)
+]
+
+#[
+#set text(size: 0.7em)
+#let lock(x) = box(inset: (x: 0.35em, y: 0.25em), radius: 2pt, fill: cyan.lighten(70%))[🔒 #x]
+#let row(x) = box(inset: (x: 0.35em, y: 0.25em), radius: 2pt, stroke: 0.5pt + gray)[#x]
++ *Phone*: hash the incoming number → its position $i$ in the server's table (here 3)
++ *Phone*: encrypt a *selector*, 1 at position $i$, 0 elsewhere. Encrypted, all entries look the same.
++ *Server*: multiply every row by its selector entry and add everything up: only row $i$ survives.
++ *Phone*: decrypt → the caller's name or spam label.
+#v(0.5em)
+#align(center, grid(
+  columns: 7,
+  column-gutter: 0.6em,
+  row-gutter: 0.4em,
+  align: horizon + center,
+  [*selector*], [], [*server's table*], [], [], [], [],
+  lock[0], [×], row[+41 21 … : Bakery], [], grid.cell(rowspan: 4)[$sum$ →], grid.cell(rowspan: 4, lock[Spam, block]), grid.cell(rowspan: 4)[→ phone decrypts],
+  lock[0], [×], row[+41 22 … : Dr. Muller], [], 
+  lock[1], [×], row[+41 79 … : Spam, block], [],
+  lock[0], [×], row[+41 31 … : Pharmacy], [],
+))
+#v(0.6em)
+#align(center)[
+  The server touches *every* row (skipping one would reveal $i$): O(n), like our *Secret index*. \
+  #text(size: 0.85em, fill: gray.darken(20%))[Only ciphertext × plaintext and additions: no bootstrapping needed.]
+]
 ]
 
 == Why don't more cores help?
