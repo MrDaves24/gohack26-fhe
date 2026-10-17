@@ -90,7 +90,7 @@ pub fn peak_count(
     let mut count = FheUint8::encrypt_trivial(0u8);
     for h in 0..N {
         // no branch on a secret: always add, 1 or 0
-        let is_peak = readings[h].gt(limit);
+        let is_peak: FheBool = readings[h].gt(limit);
         count += FheUint8::select(&is_peak, 1u8, 0u8);
     }
     count
