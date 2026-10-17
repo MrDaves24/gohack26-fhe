@@ -112,7 +112,7 @@ pub fn tariff_lookup(tier: &FheUint8) -> FheUint16 {
     // no secret index: visit every slot, keep the match
     let mut rate = FheUint16::encrypt_trivial(0u16);
     for i in 0..TARIFFS.len() {
-        let is_tier = tier.eq(i as u8);
+        let is_tier: FheBool = tier.eq(i as u8);
         rate +=
             FheUint16::select(&is_tier, TARIFFS[i], 0u16);
     }
