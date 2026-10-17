@@ -436,10 +436,17 @@
 == Loops
 
 #speaker-note[
-  (1:00) Plain: return as soon as the budget is exceeded. \
-  In FHE the loop length would leak the answer, through timing alone. So always run all 24 hours. \
-  Here we go further and rethink the algorithm: the running sum only grows, so the answer is the number of hours still within budget. A count, no early exit, no flag. \
-  Lesson: FHE changes algorithms, not just syntax. Also the most expensive step: about 13 s.
+  (1:00) \
+  Plain: return at the first hour over budget → early exit \
+  FHE: loop length would leak the answer (timing) → always 24 hours \
+  RETHINK, not just rewrite: \
+  · question changes: "when do we cross?" → "how many hours stay within?" \
+  · works because `used` only grows → within-hours all come first \
+  · count of within-hours = index of first hour over (never over: 24 = 24) \
+  · example, budget 15: used 5, 10, 16, 23 → plain stops at 2, FHE counts 2 \
+  FHE forced us to find a property of the data → no branch, no flag \
+  Most expensive step: ~13 s \
+  Equality checked on every run (bench asserts plain == FHE)
 ]
 
 #snippet(
