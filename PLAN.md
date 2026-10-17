@@ -37,11 +37,13 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | 5 | How FHE works | 1:00 | Homomorphism equation, noise grows until decryption fails, bootstrapping resets it (TFHE: a lookup that also cleans → "two moves"). The server bootstraps with the server key (the secret key encrypted under itself). Background slide: gathers what the main slides need (decided 13 Oct), instead of footnotes. No lattices. |
 | 5b | Integers in TFHE | 1:00 | Integers = chains of 2-bit blocks (u8 = 4, u32 = 16); carries and comparisons are bootstraps → cost ≈ number of bootstraps ≈ number of blocks. Mental model for the benchmark (`research/operations.md`). |
 | | **① Rewriting code** | | |
+| — | Section title | — | "Rewriting code with FHE" / "Plain Rust vs TFHE-rs, snippet by snippet" (`section-title` helper, 17 Oct). |
 | 6 | Init | 1:00 | Plain: nothing. FHE: params, keygen, ship the 181 MB server key to the server. |
 | 7 | Branching | 1:00 | `if` on a secret doesn't compile (`FheBool` is not `bool`): show the Rust compile error, then compute both sides and select. |
 | 8 | Loops | 1:00 | No early exit (iteration count leaks): loop the maximum, or rethink the algorithm (`budget_hour` counts hours within budget). |
 | 9 | Secret index | 1:00 | `TARIFFS[tier]` leaks through memory access: visit every slot, O(1) → O(n). |
 | | **② The overhead** | | |
+| — | Section title | — | "Benchmarking a real example" / "Using the snippets we saw". |
 | 12 | Smart meter | 2:00 | Scenario in pseudo-code (named steps), pipeline diagram client ↔ server: 55 B in, 3.6 MB up, 1.5 MB down, 181 MB server key once; plus one line on compression if measured. One line: the output is a fixed mask, never a list (the cut "variable output" snippet). Code NOT shown (it's on GitHub). |
 | 13 | Timings | 2:00 | Per-step chart, plain vs FHE, log scale; whole day ~30 s vs ~18 ns. Hardware: M4, 4P + 6E cores, fanless, sustained load. |
 | 14 | Where the time goes | 1:30 | Sorted FHE bars, linear: `budget_hour` + `total` ≈ 61% (computed from the CSV). Sums are TFHE's weak spot → leads to ③. |

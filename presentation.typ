@@ -46,6 +46,25 @@
 #show raw: set text(font: "Menlo")
 #set strong(delta: 200)
 
+// A section title slide, in the style of Metropolis' section slides: no header, a big
+// title over the progress bar, an optional subtitle.
+#let section-title(title, subtitle: none) = touying-slide-wrapper(self => {
+  self = utils.merge-dicts(self, config-page(fill: self.colors.neutral-lightest))
+  touying-slide(self: self, {
+    set align(horizon)
+    show: pad.with(x: 15%)
+    text(size: 1.6em, fill: self.colors.secondary, weight: "regular", title)
+    v(0.2em)
+    block(width: 100%, height: 3pt, components.progress-bar(
+      height: 3pt, self.colors.primary, self.colors.primary-light,
+    ))
+    if subtitle != none {
+      v(0.3em)
+      text(size: 0.9em, fill: gray.darken(30%), subtitle)
+    }
+  })
+})
+
 // --- Code snippets, read from the benchmarked code -------------------------------------
 
 // The function `name` from a Rust file, from `pub fn name(` to its closing `}`.
@@ -361,6 +380,11 @@
 
 = Rewriting code
 
+#section-title(
+  [Rewriting code with FHE],
+  subtitle: [Plain Rust vs TFHE-rs, snippet by snippet],
+)
+
 == Init
 
 #speaker-note[
@@ -473,6 +497,11 @@
 )
 
 = The overhead
+
+#section-title(
+  [Benchmarking a real example],
+  subtitle: [Using the snippets we saw],
+)
 
 == Smart meter
 
