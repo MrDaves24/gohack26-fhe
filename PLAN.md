@@ -30,7 +30,7 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 |---|---|---|---|
 | | **Introduction** | | |
 | 1 | Title | — | |
-| 2 | Hook | 1:30 | Global, not tied to the scenario. (a) The promise: send encrypted data, the cloud computes without the key, you decrypt the result. "The never-to-be-found Holy Grail of cryptography" (Micciancio, CACM 2010 — not IBM). Optional: Schneier 2009, Gentry's estimate of an encrypted Google search: "about a trillion" times more computing — next to our ×10⁹. (b) One encrypted comparison: ~41 ms; meanwhile the CPU does ~60 million plain ones (`gt_u8`). (c) Thesis line: "In theory, the Holy Grail. In practice, a long quest." Then: what the quest looks like in code. |
+| 2 | Hook | 1:30 | Global, not tied to the scenario. (a) The promise: send encrypted data, the cloud computes without the key, you decrypt the result. "The never-to-be-found Holy Grail of cryptography" (Micciancio, CACM 2010 — not IBM). Optional: Schneier 2009, Gentry's estimate of an encrypted Google search: "about a trillion" times more computing — next to our ×10⁹. (b) One encrypted comparison: ~41 ms and 132 KB (two `FheUint8`); in plain: 2 bytes, and ~60 million comparisons in the same time (`gt_u8`, sizes.csv). (c) Thesis line: "In theory, the Holy Grail. In practice, a long quest." Then: what the quest looks like in code. |
 | 3 | About me | 0:30 | Name, SaaS developer & consultant, MSc HES in cybersecurity, applied research in cryptography, Codexa logo, codexa.swiss, pascal@codexa.swiss. Done. |
 | 4 | Roadmap | 0:30 | ① rewrites → ② overhead → ③ real world, as a visual. |
 | | **FHE in one slide** | | |

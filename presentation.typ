@@ -174,7 +174,9 @@
 #speaker-note[
   (1:30) Open with the quote: for 30 years FHE was "the never-to-be-found Holy Grail of cryptography" (Micciancio, CACM 2010). Gentry built the first scheme in 2009. \
   The promise: send encrypted data, the cloud computes on it without ever seeing it, you decrypt the result. Medical data, finance, AI on private data. \
-  [next] So I measured the simplest operation there is: comparing two bytes. Encrypted: about 40 ms. In that time the CPU does tens of millions of plain comparisons. \
+  [next] Simplest operation: compare 2 bytes \
+  · encrypted: ~40 ms, ~130 KB of ciphertext \
+  · plain: 2 bytes, ~60 million comparisons in the same time \
   [next] Thesis, slowly: in theory, the Holy Grail. In practice, a long quest. → what the quest looks like in code \
   Sources: Micciancio, CACM 53(3) 2010; Gentry, STOC 2009 (research/history-and-bottlenecks.md). Numbers: gt_u8 in bench/results.
 ]
@@ -196,8 +198,10 @@
 #v(0.8em)
 #let gt-fhe = median("fhe", "gt_u8")
 #let gt-plain = median("plain", "gt_u8")
-`a > b` on two encrypted bytes: #text(size: 1.6em, fill: navy)[*#fmt-time(gt-fhe)*] \
-#text(size: 0.8em)[Meanwhile, your CPU does *#str(calc.round(gt-fhe / gt-plain / 1e6)) million* of them in plain.]
+`a > b` on two encrypted bytes:
+#text(size: 1.6em, fill: navy)[*#fmt-time(gt-fhe)*] and
+#text(size: 1.6em, fill: navy)[*#str(calc.round(2 * bytes("FheUint8") / 1e3)) KB*] \
+#text(size: 0.8em)[In plain: 2 bytes, and *#str(calc.round(gt-fhe / gt-plain / 1e6)) million* comparisons in those #fmt-time(gt-fhe).]
 #pause
 #v(0.6em)
 #text(size: 1.2em)[In theory, the Holy Grail. *In practice, a long quest.*]
