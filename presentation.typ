@@ -678,6 +678,9 @@
   · Oblivious HTTP relay: server doesn't see the IP \
   · Privacy Pass token: anonymous, but rate-limited \
   · server: encrypted lookup in the whole table (PIR) → like our Secret index, O(n) \
+  · WHOSE DATA: the provider's database (spam / caller ID), plaintext on its server \
+  · only the QUESTION is encrypted (by the phone, its own key) → reverse of the smart meter \
+  · ciphertext × plaintext: much cheaper than ciphertext × ciphertext \
   · phone decrypts: name / spam / block \
   WHY IT WORKS \
   · one tiny question, one fixed shallow computation \
