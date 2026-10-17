@@ -14,7 +14,9 @@
 
 ## Thesis
 
-> *"In theory, FHE is the Holy Grail of cryptography and confidential computing. In practice, it's hell."*
+> *"In theory, FHE is the Holy Grail of cryptography and confidential computing. In practice, a long quest."*
+
+Softened on 17 Oct from "In practice, it's hell" (too harsh). Takeaway variant: "…a long quest, worth it for small, well-chosen problems."
 
 Lands at the end of the hook, repeated on the takeaway slide. Every slide must serve it.
 
@@ -28,7 +30,7 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 |---|---|---|---|
 | | **Introduction** | | |
 | 1 | Title | — | |
-| 2 | Hook | 1:30 | Global, not tied to the scenario. (a) The promise: send encrypted data, the cloud computes without the key, you decrypt the result. "The never-to-be-found Holy Grail of cryptography" (Micciancio, CACM 2010 — not IBM). Optional: Schneier 2009, Gentry's estimate of an encrypted Google search: "about a trillion" times more computing — next to our ×10⁹. (b) One encrypted comparison: ~41 ms; meanwhile the CPU does ~60 million plain ones (`gt_u8`). (c) Thesis line: "In practice, it's hell. Let's see what it's like to build something." |
+| 2 | Hook | 1:30 | Global, not tied to the scenario. (a) The promise: send encrypted data, the cloud computes without the key, you decrypt the result. "The never-to-be-found Holy Grail of cryptography" (Micciancio, CACM 2010 — not IBM). Optional: Schneier 2009, Gentry's estimate of an encrypted Google search: "about a trillion" times more computing — next to our ×10⁹. (b) One encrypted comparison: ~41 ms; meanwhile the CPU does ~60 million plain ones (`gt_u8`). (c) Thesis line: "In theory, the Holy Grail. In practice, a long quest." Then: what the quest looks like in code. |
 | 3 | About me | 0:30 | Name, SaaS developer & consultant, MSc HES in cybersecurity, applied research in cryptography, Codexa logo, codexa.swiss, pascal@codexa.swiss. Done. |
 | 4 | Roadmap | 0:30 | ① rewrites → ② overhead → ③ real world, as a visual. |
 | | **FHE in one slide** | | |

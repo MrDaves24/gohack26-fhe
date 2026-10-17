@@ -175,7 +175,7 @@
   (1:30) Open with the quote: for 30 years FHE was "the never-to-be-found Holy Grail of cryptography" (Micciancio, CACM 2010). Gentry built the first scheme in 2009. \
   The promise: send encrypted data, the cloud computes on it without ever seeing it, you decrypt the result. Medical data, finance, AI on private data. \
   [next] So I measured the simplest operation there is: comparing two bytes. Encrypted: about 40 ms. In that time the CPU does tens of millions of plain comparisons. \
-  [next] Thesis, say it slowly: in theory, the Holy Grail. In practice, hell. Today: what it is like to actually build something with it. \
+  [next] Thesis, slowly: in theory, the Holy Grail. In practice, a long quest. → what the quest looks like in code \
   Sources: Micciancio, CACM 53(3) 2010; Gentry, STOC 2009 (research/history-and-bottlenecks.md). Numbers: gt_u8 in bench/results.
 ]
 
@@ -200,7 +200,7 @@
 #text(size: 0.8em)[Meanwhile, your CPU does *#str(calc.round(gt-fhe / gt-plain / 1e6)) million* of them in plain.]
 #pause
 #v(0.6em)
-#text(size: 1.2em)[In theory, the Holy Grail. *In practice, hell.*]
+#text(size: 1.2em)[In theory, the Holy Grail. *In practice, a long quest.*]
 ]
 
 == About me
@@ -736,7 +736,7 @@
 )
 #v(0.8em)
 #align(center, text(size: 1.5em)[
-  In theory, the Holy Grail. In practice, hell, unless your problem is small.
+  In theory, the Holy Grail. In practice, a long quest, worth it for small, well-chosen problems.
 ])
 ]
 
