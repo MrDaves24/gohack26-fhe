@@ -465,41 +465,43 @@
   → same problem with loops
 ]
 
-#alternatives[
-  #snippet(
-    plain("peak_count", hl: (4, 5)),
-    [
-      ```rust
-      fn peak_count(
-          readings: &[FheUint16],
-          limit: &FheUint16,
-      ) -> FheUint8 {
-          let mut count = FheUint8::encrypt_trivial(0u8);
-          for h in 0..N {
-              if readings[h].gt(limit) {
-                  count += 1u8;
-              }
-          }
-          count
-      }
-      ```
-      #text(fill: red.darken(20%))[
-        ```
-        error[E0308]: mismatched types
+// Only the FHE side and the caption change. Step 2 reserves step 1's (taller) space
+// invisibly, so both steps have the same height and the plain side doesn't move.
+#let branch-error = [
+  ```rust
+  fn peak_count(
+      readings: &[FheUint16],
+      limit: &FheUint16,
+  ) -> FheUint8 {
+      let mut count = FheUint8::encrypt_trivial(0u8);
+      for h in 0..N {
           if readings[h].gt(limit) {
-             ^^^^^^^^^^^^^^^^^^^^^ expected `bool`, found `FheBool`
-        ```
-      ]
-    ],
-    [The server can't branch on a value it can't read.],
-  )
-][
-  #snippet(
-    plain("peak_count", hl: (4, 5)),
-    fhe("peak_count", hl: (8, 9)),
-    [No branch on a secret: always compute, then *select*.],
-  )
+              count += 1u8;
+          }
+      }
+      count
+  }
+  ```
+  #text(fill: red.darken(20%))[
+    ```
+    error[E0308]: mismatched types
+      if readings[h].gt(limit) {
+         ^^^^^^^^^^^^^^^^^^^^^ expected `bool`, found `FheBool`
+    ```
+  ]
 ]
+#snippet(
+  plain("peak_count", hl: (4, 5)),
+  alternatives(
+    branch-error,
+    box[#hide(branch-error)#place(top + left, fhe("peak_count", hl: (8, 9)))],
+  ),
+  alternatives[
+    The server can't branch on a value it can't read.
+  ][
+    No branch on a secret: always compute, then *select*.
+  ],
+)
 
 == Loops
 
