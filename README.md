@@ -1,73 +1,79 @@
-# GOHack26: FHE - Usage and limitations
-In theory, FHE is the Holy Grail of cryptography and confidential computing. In practice, a long quest.
+# Fully Homomorphic Encryption (FHE) – Usage and limitations
 
-# Plan
-1. Hook (2min) : the marketing of FHE, the magic it can do
-2. Refresher (2min) : one slide of math, the homomorphism equeation, noise, bootstrapping
-3. Using FHE (5min)
-  - Plant a context, show a code we will convert to FHE
-  - Go step by step through the code, show the differences, show what we can or cannot do, how to overcome the problem
-  - Show were tradeoffs are (size, speed, security) (basically, there's a security floor limiting the minimum, we want to reach this minimum)
-4. The bill (5min)
-  - FHE is damn slow
-  - FHE is damn huge
-  - Benchmark, comparison, graphs
-5. 3min schemes, how do I pick?
-6. Pitfalls (1-2min): no integrity, that's the point. Weird attacks. The solution? Even more noise -> slower
-7. Takeaway (1-2min): When FHE is worth, or when to go for TEE, MPC, or ZKP
+Talk given at **GOHack26** (30 October 2026) by Pascal Perrenoud ([Codexa](https://codexa.swiss)).
 
-# Catalogue of annoying things to code in FHE
-Plain code	Problem in FHE	Workaround
-if secret > x { a } else { b }	can’t branch on an encrypted value	compute both sides, then cond.select(a, b)
-while / early break	the number of iterations would reveal data	fixed maximum number of iterations, masking the extra ones
-arr[secret_idx]	memory access would reveal the index	compare the index with every position and add up the masked values: O(n) instead of O(1)
-sum / count	division by an encrypted value is very expensive	divide by a public value if you can; this goes a long way
-u32 that may overflow	wraps silently, and every extra bit costs time	choose the bit width up front
-return the filtered list	the length of the output would reveal data	fixed-size output plus a mask, or return only a count
-println! for debugging	you can’t see intermediate values	debugging needs the client key, which the server never has
+> In theory, FHE is the Holy Grail of cryptography and confidential computing.
+> In practice, a long quest.
 
-# Whole program:
-normal: load data, compute, write output
-FHE: generate context, load data, encrypt data, compute, decrypt, write output
+Not an FHE overview and not a lattice lecture: what it is actually like to build
+something with FHE. The talk rewrites ordinary code for FHE snippet by snippet, then
+measures the cost in time and size on a small but complete program, a smart meter
+computing a daily bill on encrypted readings.
 
-# Program context
-A smart meter? Because it leaks when you're home and you don't want it. it also allows for a contractual limit.
+## Headline numbers
 
-# The plan
-## Phase 0: Settle the unknowns (½ day)
+Measured on a MacBook Air M4 (fanless, 4 threads, median of 5 runs), with
+[TFHE-rs](https://github.com/zama-ai/tfhe-rs) 1.8.1 and its default parameters:
 
-Ask the organizers who usually attends, and what projector, aspect ratio and video connection the room has. That also settles 16:9 versus 4:3.
-Pick a TFHE-rs version and stick to it until the talk.
-Write the one-sentence thesis on a sticky note, for example “In theory FHE computes anything. Here’s what that costs in practice.” Every slide has to serve it.
+| | Plain Rust | FHE (TFHE-rs) |
+|---|---|---|
+| `a > b` on two bytes | 0.7 ns, 2 bytes | 41 ms, 132 KB |
+| One day of the smart meter (7 steps) | 18 ns | 33 s |
+| Daily upload / download | 55 B / 40 B | 3.6 MB / 1.5 MB |
+| Server key (sent once) | — | 181 MB |
 
-## Phase 1: Code (2–3 days) — the biggest part of the work
+Plain and FHE outputs are asserted equal on every run. Raw data:
+[`bench/results/`](bench/results/).
 
-Plain Rust version of the smart meter scenario, split into named steps.
-TFHE-rs version with the same steps, each one written as a clean, self-contained snippet, since the snippets go on your slides.
-Timing per step (key generation, encryption, each computation step, decryption), plus the sizes of ciphertexts and keys, written to a CSV or JSON file.
-Check that both versions give the same results, so the encrypted version is shown to be correct as well as slow.
-Clean it up, add a README and push it to GitHub. That’s what the QR code on the last slide points to.
+## What's in the repo
 
-## Phase 2: Measure (½ day)
+| Path | Content |
+|---|---|
+| [`bench/`](bench/) | Rust crate: the smart meter in plain Rust ([`plain.rs`](bench/src/plain.rs)) and with TFHE-rs ([`fhe.rs`](bench/src/fhe.rs)), same step names; the harness ([`main.rs`](bench/src/main.rs)) times every step and writes the results |
+| [`bench/results/`](bench/results/) | `timings.csv`, `sizes.csv`, `meta.json` (machine, threads, tfhe version, date, runs) |
+| [`presentation.typ`](presentation.typ) | The slides (Typst + Touying). Charts and numbers are read from `bench/results/` |
+| [`research/`](research/) | Fact-checked notes behind every claim on the slides, each with its sources |
+| [`PRESENTING.md`](PRESENTING.md) | Presenting with pdfpc: commands, keys, usual problems |
+| [`PLAN.md`](PLAN.md) | The talk plan and every decision taken while preparing it |
+| [`CLAUDE.md`](CLAUDE.md) | Instructions for the AI assistant (Claude Code) used to prepare the talk |
 
-Run the benchmarks in release mode, several times, taking the median, and note the hardware and number of cores.
-Optionally, also measure scaling for n = 24, 48, 96… if you want a scaling chart.
-Look at the results before writing slides. If one step is surprisingly slow or fast, the story adjusts here.
+## Run the benchmark
 
-## Phase 3: Research the non-code parts (1 day)
+Requires Rust (stable). The first build of `tfhe` takes a few minutes.
 
-Check the deployments you’ll cite (Apple, Microsoft Edge Password Monitor, Zama) against their current sources.
-Confirm the Li & Micciancio citation and one line on the follow-up work.
-Gather the scheme-family comparison and a few points for the takeaway (FHE vs. TEE, MPC, ZK).
+```sh
+cd bench
+cargo run --release -- --runs 1             # quick check, ~1 min
+RAYON_NUM_THREADS=4 cargo run --release     # 5 runs, ~4 min, writes results/
+```
 
-## Phase 4: Slides (2 days)
+Options: `--runs N`, `--seed S` (another generated day), `--out DIR`.
 
-Write a skeleton in Typst: every slide’s title and one line of intent, nothing more. Read it through as a story.
-Fill in the content in this order: snippets, then pipeline diagram, then benchmark chart (loaded from your CSV), then the rest. Title, “me” and roadmap come last.
-Add speaker notes as you go. They’re much easier to write while the content is fresh.
+## Build and present the slides
 
-## Phase 5: Rehearse (1–2 days, spread out)
+Requires [Typst](https://typst.app) ≥ 0.15 (packages are fetched on first build) and, to
+present, [pdfpc](https://pdfpc.github.io).
 
-First run-through with a timer. It’ll probably run over, so cut slides rather than talking faster.
-Prepare 3–4 likely questions and backup slides for them (Li & Micciancio details, GPU numbers, why not MPC). Put them after the “Thanks” slide.
-Do a second run-through with someone listening, a third on your own, and a final check on the real projector or in 4:3.
+```sh
+./compile.sh    # → build/presentation-16-9.pdf and .pdfpc (speaker notes)
+./present.sh    # rebuilds if needed, starts pdfpc with a 20-minute timer
+```
+
+## Research notes
+
+| Note | Topic |
+|---|---|
+| [`history-and-bottlenecks.md`](research/history-and-bottlenecks.md) | "Holy Grail" quote, FHE generations, memory-bound bootstrapping |
+| [`schemes.md`](research/schemes.md) | TFHE vs BFV/BGV vs CKKS |
+| [`operations.md`](research/operations.md) | How TFHE builds `+`, `>`, `select`; FHE code as a circuit |
+| [`ciphertext-size.md`](research/ciphertext-size.md) | Why an encrypted byte is 66 KB and the server key 181 MB; LWE |
+| [`deployments.md`](research/deployments.md) | Apple (Live Caller ID, PIR), Microsoft Edge, Zama |
+| [`acceleration.md`](research/acceleration.md) | GPU, FPGA, ASIC: measured vs claimed speed-ups |
+| [`attacks.md`](research/attacks.md) | No integrity; IND-CPA<sup>D</sup> key recovery (Li & Micciancio and after) |
+| [`alternatives.md`](research/alternatives.md) | FHE vs TEE vs MPC vs ZKP |
+
+## Licence
+
+- Code (`bench/`, scripts): [MIT](LICENSE).
+- Slides, speaker notes and research notes: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- The Codexa logo (`assets/codexa-logo.png`) is not covered by either licence.

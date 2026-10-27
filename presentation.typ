@@ -1,5 +1,6 @@
 #import "@preview/touying:0.8.0": *
 #import themes.metropolis: *
+#import "@preview/codetastic:0.2.2": qrcode
 
 // Codexa brand colors, sampled from the press logo (codexa.swiss/fr/press).
 #let navy = rgb("#012473")
@@ -65,6 +66,14 @@
     }
   })
 })
+
+// The repo: code, results and sourced research notes.
+#let repo-url = "https://github.com/MrDaves24/gohack26-fhe"
+#let repo-qr(width) = stack(
+  spacing: 0.4em,
+  qrcode(repo-url, width: width, colors: (white, navy)),
+  text(size: 9pt, fill: gray.darken(30%), repo-url.trim("https://", at: start)),
+)
 
 // --- Code snippets, read from the benchmarked code -------------------------------------
 
@@ -937,6 +946,8 @@
     - seconds and megabytes are acceptable.
     #v(0.4em)
     Real systems mix them: Zama = FHE + ZKP + MPC + TEE.
+    #v(0.6em)
+    #align(center, repo-qr(85pt))
   ],
 )
 #v(0.8em)
@@ -954,6 +965,11 @@
   Thanks for your attention
 
   #text(size: 0.6em)[Any question?]
+
+  #v(0.5em)
+  #box(fill: white, inset: 0.3em, radius: 3pt, qrcode(repo-url, width: 3.5em, colors: (white, navy)))
+  #v(-0.4em)
+  #text(size: 0.4em)[#repo-url.trim("https://", at: start)]
 ]
 
 #show: appendix

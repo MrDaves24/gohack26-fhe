@@ -112,7 +112,7 @@ Privacy motivation: hourly electricity use reveals when someone is home.
 - Hook number: one `FheUint8` `gt` vs plain `u8 >`, timed as step `gt_u8` (median over many repeats for plain, it's ~1 ns).
 - Plain baseline must use `std::hint::black_box` so it isn't optimized away.
 - Repeat the full run R times (e.g. 5, fewer if too slow), report the **median**. A 5-run benchmark takes ~4 min on 4 threads.
-- Threads: development runs use `RAYON_NUM_THREADS=4` (keeps the laptop usable); the final run uses all 10 cores. `meta.json` records `threads`.
+- Threads: `RAYON_NUM_THREADS=4` (keeps the laptop usable). **The 4-thread, 5-run results of 13 Oct are the final numbers** (decided 27 Oct: no 10-thread run). `meta.json` records `threads`.
 - **Thermal throttling (decided: keep it).** The fanless Air slows down under sustained load: run 1 is ~15–25% faster than runs 2–5 on every FHE step. We report the plain **median**, i.e. the warm, sustained-load speed — what a busy server would see. No cooldown between runs. Slide wording: "fanless MacBook Air, sustained load".
 - Timing tool: in-program `Instant` per step. FHE steps take 0.5–13 s, so timer precision is irrelevant; run-to-run variance (throttling) dominates. Criterion (built for µs–ms functions, ≥10 samples per step → ~1 h) and hyperfine (whole process only, no per-step split) were rejected.
 - Sizes (`safe_serialized_size`, bytes, measured once): one ciphertext per type used (`FheUint8/16/32`, `FheBool`), plaintext equivalents, client key, server key, compressed server key (done in the template). With the scenario: `upload` (all encrypted inputs) and `download` (all encrypted outputs).
@@ -188,3 +188,9 @@ Findings and sources: `research/deployments.md`, `research/attacks.md`, `researc
 - Why not MPC or a TEE instead?
 - What exactly is the Li & Micciancio attack / is TFHE affected?
 - Is it production-ready for X (AI, databases)?
+
+## Publication (decided 27 Oct)
+
+- Repo on GitHub: **https://github.com/MrDaves24/gohack26-fhe** (QR code on the takeaway and the Thanks slide). The PDF goes on codexa.swiss, linking to the repo.
+- README rewritten for the public (headline numbers, how to run, research index). Licences: code MIT (`LICENSE`), slides and research notes CC BY 4.0, Codexa logo excluded.
+- `PLAN.md` and `CLAUDE.md` stay in the repo, described in the README.
