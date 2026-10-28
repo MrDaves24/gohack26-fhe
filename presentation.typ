@@ -607,13 +607,50 @@
   ],
 )
 
-== Smart meter
+== Smart meter: the scenario
 
 #speaker-note[
-  (2:00) \
-  Scenario: smart meter, hourly readings → reveal when you're home \
-  Want: bill, peaks, budget, without the provider seeing readings \
-  Pseudo-code: 7 steps, each one a snippet we saw \
+  (1:15) \
+  Meter reads consumption every hour → 24 numbers a day \
+  They show your life: wake up, leave, come home, holidays \
+  Today: the provider sees all of it \
+  With FHE: meter sends them encrypted, provider computes, only you decrypt \
+  Walk the table top to bottom: question → snippet we saw \
+  Names in bold = rows on the timing chart \
+  → what travels between them?
+]
+
+#[
+#set text(size: 0.75em)
+#let lock(x) = box(inset: (x: 0.45em, y: 0.3em), radius: 3pt, fill: cyan.lighten(70%))[🔒 #x]
+#align(center, text(size: 1.15em)[
+  Your meter reads your consumption *every hour*: 24 readings a day \
+  #text(size: 0.8em, fill: gray.darken(20%))[They show when you wake up, leave and come home. The provider must bill you without seeing them.]
+])
+#v(0.3em)
+#align(center)[
+  Encrypted by the meter: #lock[24 readings] #lock[peak limit] #lock[tariff tier] #lock[daily budget]
+]
+#v(0.3em)
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: (x, y) => if y > 0 { (top: 0.5pt + gray.lighten(40%)) },
+  inset: (x: 0.6em, y: 0.4em),
+  table.header[*Step*][*Question the provider answers*][*Snippet*],
+  [*total*], [How much did you use today?], [a sum],
+  [*average*], [How much per hour?], [÷ 24 (public)],
+  [*peak_count*], [How many hours above your limit?], [`if` → select],
+  [*peak_mask*], [Which hours?], [fixed-size output],
+  [*tariff_lookup*], [What is your price per kWh?], [secret index],
+  [*bill*], [What do you pay?], [encrypted × encrypted],
+  [*budget_hour*], [When did you go over budget?], [loop, no early exit],
+)
+]
+
+== Smart meter: on the wire
+
+#speaker-note[
+  (0:45) \
   Sizes (arrows): \
   · server key once (181 MB) \
   · every day: MBs up instead of 55 bytes, MBs back instead of 40 \
@@ -622,45 +659,24 @@
   → how long does it take?
 ]
 
+#[
+#set text(size: 0.85em)
 #grid(
-  columns: (1fr, 1.3fr),
-  column-gutter: 1.5em,
+  columns: (1fr, 2fr, 1fr),
+  column-gutter: 0.8em,
+  row-gutter: 1.4em,
   align: horizon,
-  text(size: 0.68em)[
-    ```
-    // client inputs, encrypted
-    readings[24], limit, tier, budget
-
-    // server, on ciphertexts
-    total       = sum(readings)
-    average     = total / 24
-    peak_count  = count(r > limit)
-    peak_mask   = [r > limit, each hour]
-    rate        = TARIFFS[tier]
-    bill        = total * rate / 1000
-    budget_hour = first hour over budget
-    ```
-  ],
-  {
-    set text(size: 0.7em)
-    grid(
-      columns: (1fr, 2fr, 1fr),
-      column-gutter: 0.6em,
-      row-gutter: 1.2em,
-      align: horizon,
-      grid.cell(rowspan: 3, party[Client (meter)][keys, encrypt, decrypt]),
-      arrow[server key, once][*#mb("server_key")*],
-      grid.cell(rowspan: 3, party[Server][computes, can't read]),
-      arrow([inputs, every day], sub: [55 B in plain])[*#mb1("upload")*],
-      arrow([results, every day], sub: [40 B in plain], back: true)[*#mb1("download")*],
-    )
-  },
+  grid.cell(rowspan: 3, party[Client (meter)][keys, encrypt, decrypt]),
+  arrow[server key, once][*#mb("server_key")*],
+  grid.cell(rowspan: 3, party[Server (provider)][computes, can't read]),
+  arrow([inputs, every day], sub: [55 B in plain])[*#mb1("upload")*],
+  arrow([results, every day], sub: [40 B in plain], back: true)[*#mb1("download")*],
 )
-#v(0.6em)
-#align(center, text(size: 0.85em)[
-  All the snippets in one program. The output is a *fixed-size* mask, never a list:
-  its length would leak.
-])
+#v(1em)
+#align(center)[
+  The output is a *fixed-size* mask, never a list: its length would leak.
+]
+]
 
 == Timings
 

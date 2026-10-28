@@ -45,7 +45,7 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | 9b | It's a circuit | 0:30 | Recap of the snippets (decided 17 Oct): plain → FHE → FPGA table (if → mux, fixed loops, mux over every entry, fixed widths, fixed outputs). "If you have written VHDL or Verilog, you already know the rules"; gates in ms instead of ns. |
 | | **② The overhead** | | |
 | — | Section title | — | "Benchmarking a real example" / "Using the snippets we saw". |
-| 12 | Smart meter | 2:00 | Scenario in pseudo-code (named steps), pipeline diagram client ↔ server: 55 B in, 3.6 MB up, 1.5 MB down, 181 MB server key once; plus one line on compression if measured. One line: the output is a fixed mask, never a list (the cut "variable output" snippet). Code NOT shown (it's on GitHub). |
+| 12 | Smart meter: the scenario + on the wire | 2:00 | Two slides (split 28 Oct: the pseudo-code alone didn't explain the scenario). (1:15) The story (hourly readings reveal when you're home), the encrypted inputs, and a table step → question the provider answers → snippet used. (0:45) Pipeline diagram client ↔ server: 55 B in, 3.6 MB up, 1.5 MB down, 181 MB server key once; one line: the output is a fixed mask, never a list. Code NOT shown (it's on GitHub). |
 | 13 | Timings | 2:00 | Per-step chart, plain vs FHE, log scale; whole day ~30 s vs ~18 ns. Hardware: M4, 4P + 6E cores, fanless, sustained load. |
 | 14 | Where the time goes | 1:30 | Sorted FHE bars, linear: `budget_hour` + `total` ≈ 61% (computed from the CSV). Sums are TFHE's weak spot → leads to ③. |
 | | **③ FHE in the real world** | | |
