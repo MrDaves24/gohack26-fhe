@@ -67,6 +67,18 @@
   })
 })
 
+// Metropolis' focus slide, without freezing the slide counter: a frozen counter gives
+// it the previous slide's number, so pdfpc takes it for an overlay of that slide and
+// previews it in place of the real one.
+#let focus-slide(body) = touying-slide-wrapper(self => {
+  self = utils.merge-dicts(self, config-page(fill: self.colors.neutral-dark, margin: 3em))
+  touying-slide(
+    self: self,
+    setting: it => align(horizon + center, text(fill: self.colors.neutral-lightest, size: 1.5em, it)),
+    body,
+  )
+})
+
 // The repo: code, results and sourced research notes.
 #let repo-url = "https://github.com/MrDaves24/gohack26-fhe"
 #let repo-qr(width) = stack(
