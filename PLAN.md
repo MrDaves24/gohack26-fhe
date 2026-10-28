@@ -34,8 +34,8 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | 3 | About me | 0:30 | Name, SaaS developer & consultant, MSc HES in cybersecurity, applied research in cryptography, Codexa logo, codexa.swiss, pascal@codexa.swiss. Done. |
 | 4 | Roadmap | 0:30 | ① rewrites → ② overhead → ③ real world, as a visual. |
 | | **FHE in one slide** | | |
-| 4b | What is FHE? | 1:00 | Added 28 Oct after feedback from a crypto expert ("TFHE is used without being introduced"): partially (textbook RSA ×, Paillier +) → somewhat (+ and ×, limited depth: Apple, Edge) → fully (bootstrapping, Gentry 2009); + and × on bits = any circuit; families BGV/BFV, CKKS, TFHE; "this talk: TFHE with TFHE-rs". *Integers in TFHE* moved to the backup slides to keep the time. |
-| 5 | How FHE works | 1:00 | Homomorphism equation, noise grows until decryption fails, bootstrapping resets it (TFHE: a lookup that also cleans → "two moves"). The server bootstraps with the server key (the secret key encrypted under itself). Background slide: gathers what the main slides need (decided 13 Oct), instead of footnotes. No lattices. |
+| 4b | What is FHE? | 1:00 | Added 28 Oct after feedback from a crypto expert ("TFHE is used without being introduced"). Basics only: computing on encrypted data (diagram 3, 4 → encrypt → server ⊕ → decrypt → 7), the homomorphism equations for + and ×, only the client holds the key, + and × on bits = any circuit. |
+| 5 | How FHE works | 1:30 | Left: noise bars (fresh, ⊕, ⊕, ⊗, bootstrap) under the "decryption fails" line. Right: three kinds (partially: textbook RSA ×, Paillier +; somewhat: Apple, Edge; fully: bootstrapping, Gentry 2009). Bottom: families BGV/BFV, CKKS, TFHE; "this talk: TFHE with TFHE-rs, its bootstrap also applies a lookup table". *Integers in TFHE* is a backup slide. |
 | | **① Rewriting code** | | |
 | — | Section title | — | "Rewriting code with FHE" / "Plain Rust vs TFHE-rs, snippet by snippet" (`section-title` helper, 17 Oct). |
 | 6 | Init | 1:00 | Plain: nothing. FHE: params, keygen, ship the 181 MB server key to the server. |
@@ -58,7 +58,7 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | 18 | Thanks | — | Focus slide: "Thanks for your attention" / "Any question?" |
 | — | Backup | — | Li & Micciancio · Integers in TFHE (2-bit blocks, carries, size) · Division (public vs encrypted divisor) · Deployments in detail · How does Apple's lookup work? (PIR) · Compiling code to FHE (Google's transpiler via XLS, HEIR, Concrete) · Scheme comparison · Why not MPC or a TEE? · Why don't more cores help? · Why is an encrypted byte 66 KB? · How is one block encrypted? (LWE) · How does select work? |
 
-Total: 21:00 (17 Oct: circuit recap +0:30; background two slides +0:30; Division and Bit width cut −2:00; schemes −0:30, Apple deep dive +1:30, acceleration +1:00). The run-through decides what to trim.
+Total: 21:30 (28 Oct: background reworked into What is FHE? 1:00 + How FHE works 1:30, Integers to backup, +0:30; 17 Oct: circuit recap +0:30; background two slides +0:30; Division and Bit width cut −2:00; schemes −0:30, Apple deep dive +1:30, acceleration +1:00). The run-through decides what to trim.
 
 ## Snippet catalogue
 

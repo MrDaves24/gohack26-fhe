@@ -319,17 +319,61 @@
 
 #speaker-note[
   (1:00) \
-  Homomorphic = compute on encrypted data, decrypt the result \
-  Ladder: \
-  · partially HE: one operation, old: textbook RSA ×, Paillier + (1999) · real RSA (padded) is not homomorphic \
-  · somewhat HE: + and ×, limited depth (noise) → Apple, Edge \
-  · fully HE: unlimited, bootstrapping (Gentry 2009) → the Holy Grail \
-  + and × on bits = XOR and AND → any circuit (remember for later) \
-  Families: BGV/BFV (exact ints, batched), CKKS (approx reals, ML), TFHE (small ints, fast bootstrap + lookup) \
-  This talk: TFHE, via Zama's TFHE-rs (Rust) \
-  If asked how integers work in TFHE: backup "Integers in TFHE" \
-  → how does it work, and why is it slow? \
-  Sources: research/history-and-bottlenecks.md, research/schemes.md
+  Computing on encrypted data: the whole idea \
+  Walk the diagram: client encrypts 3 and 4 → server adds the ciphertexts → client decrypts 7 \
+  · server never sees 3, 4 or 7 · only the client has the secret key \
+  Equation: decrypt(operation on ciphertexts) = operation on plaintexts \
+  · works for + and × \
+  · + and × on bits = XOR and AND → any circuit → any computation, in theory \
+  → so why isn't everything encrypted? noise \
+  Sources: research/history-and-bottlenecks.md
+]
+
+#[
+#set text(size: 0.8em)
+#align(center, text(size: 1.3em)[*Computing on encrypted data*])
+#v(0.6em)
+#let val(x) = box(inset: (x: 0.5em, y: 0.35em), radius: 3pt, stroke: 0.8pt + gray)[#x]
+#let enc(x) = box(inset: (x: 0.5em, y: 0.35em), radius: 3pt, fill: cyan.lighten(70%))[🔒 #x]
+#let step(x) = text(size: 0.8em, fill: navy)[#x →]
+#align(center, text(size: 1.25em, grid(
+  columns: 7,
+  column-gutter: 0.7em,
+  row-gutter: 0.5em,
+  align: horizon + center,
+  [#val[3] #val[4]], step[encrypt], [#enc[] #enc[]], step[server: $plus.o$], enc[], step[decrypt], val[7],
+  text(size: 0.75em, fill: gray.darken(20%))[client], [], [], text(size: 0.75em, fill: gray.darken(20%))[never sees the values], [], [], text(size: 0.75em, fill: gray.darken(20%))[client],
+)))
+#v(0.8em)
+#align(center)[
+  #text(size: 1.2em)[$"Dec"("Enc"(a) plus.o "Enc"(b)) = a + b quad quad "Dec"("Enc"(a) times.o "Enc"(b)) = a times b$]
+]
+#v(0.6em)
+#align(center)[
+  Only the client holds the secret key. \
+  \+ and × on bits are XOR and AND: with both, you can compute *anything*.
+]
+]
+
+== How FHE works
+
+#speaker-note[
+  (1:30) \
+  NOISE (left, say it) \
+  · every ciphertext carries noise: that is what makes it secure \
+  · every operation adds noise; × much more than + \
+  · past the red line: decryption gives garbage \
+  · bootstrapping resets the noise (expensive) \
+  3 KINDS (right) \
+  · partially: one operation, old (textbook RSA ×; Paillier + 1999) · padded RSA is not homomorphic \
+  · somewhat: both, until the noise is too high → Apple, Edge \
+  · fully: bootstrapping → unlimited (Gentry 2009) \
+  TFHE: its bootstrap also applies a lookup table → "two moves": cheap linear algebra + lookup that cleans \
+  · server bootstraps with the server key (secret key encrypted under itself) \
+  "=" exact for TFHE, BFV/BGV; CKKS "≈" (noise stays in the result) \
+  If asked how integers work: backup "Integers in TFHE" \
+  → let's write code \
+  Sources: research/operations.md, research/schemes.md, research/history-and-bottlenecks.md
 ]
 
 #[
@@ -338,90 +382,46 @@
   columns: (1fr, 1fr),
   column-gutter: 2em,
   align: top,
+  {
+    align(center)[*Noise*]
+    v(1.4em)
+    // Noise level of one ciphertext through a few operations (illustrative, not measured).
+    let steps = (
+      ([fresh], 15%, c-plain),
+      ([$plus.o$], 25%, c-plain),
+      ([$plus.o$], 38%, c-plain),
+      ([$times.o$], 88%, c-plain),
+      ([bootstrap], 15%, c-fhe),
+    )
+    block(width: 100%, {
+      place(top, dy: -0.1em, line(length: 100%, stroke: (paint: red.darken(20%), dash: "dashed", thickness: 1pt)))
+      place(top + right, dy: -1.3em, text(size: 0.85em, fill: red.darken(20%))[too much noise: decryption fails])
+      grid(
+        columns: steps.len(),
+        column-gutter: 1fr,
+        row-gutter: 0.4em,
+        align: center + bottom,
+        ..steps.map(((_, lvl, c)) => box(width: 1.5em, height: 5em, align(bottom, box(width: 100%, height: lvl, fill: c, radius: (top: 2pt))))),
+        ..steps.map(((l, _, _)) => text(size: 0.85em, l)),
+      )
+    })
+  },
   [
-    *Homomorphic*: compute on encrypted data, decrypt the result.
-    #v(0.4em)
+    #align(center)[*Three kinds*]
     #let rung(name, what, ex) = block(
-      width: 100%, inset: (left: 0.7em, y: 0.35em), stroke: (left: 3pt + c-fhe),
+      width: 100%, inset: (left: 0.7em, y: 0.3em), stroke: (left: 3pt + c-fhe),
       [*#name* · #what \ #text(size: 0.85em, fill: gray.darken(20%), ex)],
     )
-    #rung[Partially][one operation only][textbook RSA (×), Paillier 1999 (+)]
-    #v(0.2em)
-    #rung[Somewhat][\+ and ×, limited depth: noise grows][Apple, Microsoft Edge]
-    #v(0.2em)
-    #rung[Fully][unlimited depth, thanks to *bootstrapping*][Gentry 2009: the Holy Grail]
-    #v(0.4em)
-    \+ and × on bits are XOR and AND: *any circuit*.
-  ],
-  [
-    *Main families today*
-    #v(0.2em)
-    #table(
-      columns: (auto, 1fr),
-      stroke: (x, y) => if y > 0 { (top: 0.5pt + gray.lighten(40%)) },
-      inset: (x: 0.4em, y: 0.5em),
-      [*BGV / BFV*], [exact integers, thousands per ciphertext],
-      [*CKKS*], [approximate reals, machine learning],
-      table.cell(fill: cyan.lighten(85%))[*TFHE*], table.cell(fill: cyan.lighten(85%))[small integers, fast bootstrapping that also applies a lookup table],
-    )
-    #v(0.4em)
-    This talk: *TFHE*, with Zama's *TFHE-rs* (Rust).
+    #rung[Partially][one operation only][textbook RSA (×), Paillier (+)]
+    #rung[Somewhat][\+ and ×, until the noise is too high][Apple, Microsoft Edge]
+    #rung[Fully][unlimited: *bootstrapping* resets the noise][Gentry 2009: the Holy Grail]
   ],
 )
-]
-
-== How FHE works
-
-#speaker-note[
-  (1:00) \
-  Equation: compute on ciphertexts, decrypt → same result as in plain \
-  · "=" is exact for TFHE, BFV/BGV (rounding removes the noise) \
-  · CKKS: "≈", the noise stays in the result \
-  NOISE (on screen, not written: say it) \
-  · every ciphertext carries noise: that is what makes it secure \
-  · every operation adds noise; × much more than + \
-  · past the red line: decryption gives garbage \
-  Bootstrap: resets the noise; in TFHE also applies a lookup → "two moves" \
-  Server key = secret key encrypted under itself → lets the server bootstrap \
-  → let's write code \
-  Sources: research/operations.md, research/ciphertext-size.md
-]
-
-#[
-#set text(size: 0.8em)
-#align(center)[
-  #text(size: 1.3em)[$"Dec"("Enc"(a) plus.o "Enc"(b)) = a + b$]
-  #v(0.2em)
-  The server computes on ciphertexts; only the key holder can read the result.
-]
 #v(0.8em)
-// Noise level of one ciphertext through a few operations (illustrative, not measured).
-#let steps = (
-  ([fresh], 15%, c-plain),
-  ([$plus.o$], 25%, c-plain),
-  ([$plus.o$], 38%, c-plain),
-  ([$times.o$], 88%, c-plain),
-  ([bootstrap], 15%, c-fhe),
-)
-#let h = 5em
-#align(center, block(width: 60%, {
-  place(top, dy: -0.1em, line(length: 100%, stroke: (paint: red.darken(20%), dash: "dashed", thickness: 1pt)))
-  place(top + right, dy: -1.2em, text(size: 0.8em, fill: red.darken(20%))[too much noise: decryption fails])
-  grid(
-    columns: steps.len(),
-    column-gutter: 1fr,
-    row-gutter: 0.4em,
-    align: center + bottom,
-    ..steps.map(((_, lvl, c)) => box(width: 1.6em, height: h, align(bottom, box(width: 100%, height: lvl, fill: c, radius: (top: 2pt))))),
-    ..steps.map(((l, _, _)) => text(size: 0.85em, l)),
-  )
-}))
-#align(center, text(size: 0.75em, fill: gray.darken(20%))[noise in one ciphertext (illustration)])
-#v(0.6em)
 #align(center)[
-  TFHE has two moves: *cheap linear algebra*, and a *lookup table that also resets the noise*
-  (bootstrapping). Everything else is built from those. \
-  The server bootstraps with the *server key*: the secret key, encrypted under itself.
+  Fully homomorphic families: *BGV / BFV* (exact integers) · *CKKS* (approximate reals) · *TFHE* (small integers) \
+  #v(0.2em)
+  This talk: *TFHE*, with Zama's *TFHE-rs*. Its bootstrap also applies a *lookup table*.
 ]
 ]
 
