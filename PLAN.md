@@ -170,9 +170,9 @@ Findings and sources: `research/deployments.md`, `research/attacks.md`, `researc
 | Thu 15 Oct | FHE: `peak_mask`, `tariff_lookup`, `bill`, `budget_hour`, `average`. Plain == FHE check | [x] |
 | Fri 16 Oct | Step timings, sizes, CSV/JSON output. README, push to GitHub. Overnight benchmark | [ ] |
 | Sat 17 – Sun 18 | Buffer (Phase 1 overflow) | [ ] |
-| Mon 19 Oct | Analyse numbers, adjust story. Research/verify list above | [ ] |
-| Tue 20 Oct | Typst skeleton (title + one-line intent per slide), read through as a story. Snippet slides | [ ] |
-| Wed 21 Oct | Pipeline diagram, charts from CSV, remaining slides, speaker notes | [ ] |
+| Mon 19 Oct | Analyse numbers, adjust story. Research/verify list above | [x] |
+| Tue 20 Oct | Typst skeleton (title + one-line intent per slide), read through as a story. Snippet slides | [x] |
+| Wed 21 Oct | Pipeline diagram, charts from CSV, remaining slides, speaker notes | [x] |
 | **Thu 22 Oct** | **First timed run-through**, cut slides. Backup slides. (Non-negotiable: no updates after 23rd) | [ ] |
 | **Fri 23 Oct** | Polish, **submit** | [ ] |
 | Sat 24 – Thu 29 | Rehearse (once with a listener, once alone). Prepare answers to likely questions | [ ] |
