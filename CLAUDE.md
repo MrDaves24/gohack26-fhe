@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Repo for Pascal's GOHack26 talk **"Fully Homomorphic Encryption FHE – Usage and limitations"** (Fri 30 Oct 2026, 15:30; slides due **Fri 23 Oct**, no updates after).
+Repo for Pascal's GOHack26 talk **"Fully Homomorphic Encryption FHE – Usage and limitations"** (Fri 30 Oct 2026, 15:30).
 
 **Read `PLAN.md` first.** It holds every decision: thesis, slide structure and timings, snippet catalogue, the smart meter scenario spec, benchmark methodology, schedule. Don't re-litigate settled decisions; propose changes explicitly if something in the code contradicts the plan. Tick schedule checkboxes in `PLAN.md` when tasks are done.
 
