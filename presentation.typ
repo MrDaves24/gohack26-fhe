@@ -83,7 +83,8 @@
 #let repo-url = "https://github.com/MrDaves24/gohack26-fhe"
 #let repo-qr(width) = stack(
   spacing: 0.4em,
-  qrcode(repo-url, width: width, colors: (white, navy)),
+  // 1-module quiet zone instead of 4: the white slide around it is margin enough.
+  qrcode(repo-url, width: width, quiet-zone: 1, colors: (white, navy)),
   text(size: 9pt, fill: gray.darken(30%), repo-url.trim("https://", at: start)),
 )
 
@@ -986,7 +987,7 @@
     #v(0.4em)
     Real systems mix them: Zama = FHE + ZKP + MPC + TEE.
     #v(0.6em)
-    #align(center, repo-qr(85pt))
+    #align(center, repo-qr(115pt))
   ],
 )
 #v(0.8em)
@@ -1006,7 +1007,7 @@
   #text(size: 0.6em)[Any question?]
 
   #v(0.5em)
-  #box(fill: white, inset: 0.3em, radius: 3pt, qrcode(repo-url, width: 3.5em, colors: (white, navy)))
+  #qrcode(repo-url, width: 5em, quiet-zone: 1, colors: (white, navy))
   #v(-0.4em)
   #text(size: 0.4em)[#repo-url.trim("https://", at: start)]
 ]
