@@ -34,8 +34,8 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | 3 | About me | 0:30 | Name, SaaS developer & consultant, MSc HES in cybersecurity, applied research in cryptography, Codexa logo, codexa.swiss, pascal@codexa.swiss. Done. |
 | 4 | Roadmap | 0:30 | ① rewrites → ② overhead → ③ real world, as a visual. |
 | | **FHE in one slide** | | |
+| 4b | What is FHE? | 1:00 | Added 28 Oct after feedback from a crypto expert ("TFHE is used without being introduced"): partially (textbook RSA ×, Paillier +) → somewhat (+ and ×, limited depth: Apple, Edge) → fully (bootstrapping, Gentry 2009); + and × on bits = any circuit; families BGV/BFV, CKKS, TFHE; "this talk: TFHE with TFHE-rs". *Integers in TFHE* moved to the backup slides to keep the time. |
 | 5 | How FHE works | 1:00 | Homomorphism equation, noise grows until decryption fails, bootstrapping resets it (TFHE: a lookup that also cleans → "two moves"). The server bootstraps with the server key (the secret key encrypted under itself). Background slide: gathers what the main slides need (decided 13 Oct), instead of footnotes. No lattices. |
-| 5b | Integers in TFHE | 1:00 | Integers = chains of 2-bit blocks (u8 = 4, u32 = 16); carries and comparisons are bootstraps → cost ≈ number of bootstraps ≈ number of blocks. Mental model for the benchmark (`research/operations.md`). |
 | | **① Rewriting code** | | |
 | — | Section title | — | "Rewriting code with FHE" / "Plain Rust vs TFHE-rs, snippet by snippet" (`section-title` helper, 17 Oct). |
 | 6 | Init | 1:00 | Plain: nothing. FHE: params, keygen, ship the 181 MB server key to the server. |
@@ -56,7 +56,7 @@ Decided 13 Oct. Sections are the Touying `=` headings; the intent of each slide 
 | | **Takeaway** | | |
 | 17 | When is FHE worth it? | 1:30 | FHE vs TEE / MPC / ZKP. Thesis line again. QR code → GitHub repo. |
 | 18 | Thanks | — | Focus slide: "Thanks for your attention" / "Any question?" |
-| — | Backup | — | Li & Micciancio · Division (public vs encrypted divisor) · Deployments in detail · How does Apple's lookup work? (PIR) · Compiling code to FHE (Google's transpiler via XLS, HEIR, Concrete) · Scheme comparison · Why not MPC or a TEE? · Why don't more cores help? · Why is an encrypted byte 66 KB? · How is one block encrypted? (LWE) · How does select work? |
+| — | Backup | — | Li & Micciancio · Integers in TFHE (2-bit blocks, carries, size) · Division (public vs encrypted divisor) · Deployments in detail · How does Apple's lookup work? (PIR) · Compiling code to FHE (Google's transpiler via XLS, HEIR, Concrete) · Scheme comparison · Why not MPC or a TEE? · Why don't more cores help? · Why is an encrypted byte 66 KB? · How is one block encrypted? (LWE) · How does select work? |
 
 Total: 21:00 (17 Oct: circuit recap +0:30; background two slides +0:30; Division and Bit width cut −2:00; schemes −0:30, Apple deep dive +1:30, acceleration +1:00). The run-through decides what to trim.
 

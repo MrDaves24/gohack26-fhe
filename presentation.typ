@@ -315,6 +315,61 @@
 
 = FHE in one slide
 
+== What is FHE?
+
+#speaker-note[
+  (1:00) \
+  Homomorphic = compute on encrypted data, decrypt the result \
+  Ladder: \
+  · partially HE: one operation, old: textbook RSA ×, Paillier + (1999) · real RSA (padded) is not homomorphic \
+  · somewhat HE: + and ×, limited depth (noise) → Apple, Edge \
+  · fully HE: unlimited, bootstrapping (Gentry 2009) → the Holy Grail \
+  + and × on bits = XOR and AND → any circuit (remember for later) \
+  Families: BGV/BFV (exact ints, batched), CKKS (approx reals, ML), TFHE (small ints, fast bootstrap + lookup) \
+  This talk: TFHE, via Zama's TFHE-rs (Rust) \
+  If asked how integers work in TFHE: backup "Integers in TFHE" \
+  → how does it work, and why is it slow? \
+  Sources: research/history-and-bottlenecks.md, research/schemes.md
+]
+
+#[
+#set text(size: 0.72em)
+#grid(
+  columns: (1fr, 1fr),
+  column-gutter: 2em,
+  align: top,
+  [
+    *Homomorphic*: compute on encrypted data, decrypt the result.
+    #v(0.4em)
+    #let rung(name, what, ex) = block(
+      width: 100%, inset: (left: 0.7em, y: 0.35em), stroke: (left: 3pt + c-fhe),
+      [*#name* · #what \ #text(size: 0.85em, fill: gray.darken(20%), ex)],
+    )
+    #rung[Partially][one operation only][textbook RSA (×), Paillier 1999 (+)]
+    #v(0.2em)
+    #rung[Somewhat][\+ and ×, limited depth: noise grows][Apple, Microsoft Edge]
+    #v(0.2em)
+    #rung[Fully][unlimited depth, thanks to *bootstrapping*][Gentry 2009: the Holy Grail]
+    #v(0.4em)
+    \+ and × on bits are XOR and AND: *any circuit*.
+  ],
+  [
+    *Main families today*
+    #v(0.2em)
+    #table(
+      columns: (auto, 1fr),
+      stroke: (x, y) => if y > 0 { (top: 0.5pt + gray.lighten(40%)) },
+      inset: (x: 0.4em, y: 0.5em),
+      [*BGV / BFV*], [exact integers, thousands per ciphertext],
+      [*CKKS*], [approximate reals, machine learning],
+      table.cell(fill: cyan.lighten(85%))[*TFHE*], table.cell(fill: cyan.lighten(85%))[small integers, fast bootstrapping that also applies a lookup table],
+    )
+    #v(0.4em)
+    This talk: *TFHE*, with Zama's *TFHE-rs* (Rust).
+  ],
+)
+]
+
 == How FHE works
 
 #speaker-note[
@@ -328,7 +383,7 @@
   · past the red line: decryption gives garbage \
   Bootstrap: resets the noise; in TFHE also applies a lookup → "two moves" \
   Server key = secret key encrypted under itself → lets the server bootstrap \
-  → but a ciphertext holds only a few bits: integers \
+  → let's write code \
   Sources: research/operations.md, research/ciphertext-size.md
 ]
 
@@ -368,52 +423,6 @@
   (bootstrapping). Everything else is built from those. \
   The server bootstraps with the *server key*: the secret key, encrypted under itself.
 ]
-]
-
-== Integers in TFHE
-
-#speaker-note[
-  (1:00) \
-  One ciphertext holds only a few bits → integer = row of 2-bit blocks (base-4 digits) \
-  · FheUint8 = 4 blocks · FheUint32 = 16 \
-  · why: a bootstrap = lookup table, cost explodes with bits per block \
-  a + b: add blocks (cheap), then each carry → next block = a bootstrap \
-  a > b: compare each pair (lookup), combine as a tree (more lookups) \
-  Cost ≈ bootstraps ≈ blocks · size: 1 byte → 66 KB \
-  If asked: backups "66 KB", "How is one block encrypted?", "How does select work?" \
-  → now let's write code \
-  Sources: research/operations.md, research/ciphertext-size.md
-]
-
-#[
-#set text(size: 0.8em)
-`FheUint8` = 4 ciphertexts of *2 bits* each:
-#v(0.3em)
-#align(center, block(width: 80%, stack(dir: ltr, spacing: 3pt,
-  ..range(4).map(i => block-box(24.5%, cyan.lighten(60%))[2 bits]))))
-#v(0.8em)
-#grid(
-  columns: (1fr, 1fr),
-  column-gutter: 2em,
-  align: top,
-  [
-    *$a + b$*
-    - add block by block: cheap
-    - move each *carry* to the next block: *a bootstrap each*
-  ],
-  [
-    *$a > b$*
-    - compare each pair of blocks: a lookup
-    - combine the results: more lookups
-  ],
-)
-#v(0.8em)
-#align(center, text(size: 1.2em)[
-  Cost ≈ number of bootstraps ≈ number of blocks. \
-  #v(0.3em)
-  Size: *1 byte → #kb("FheUint8")* \
-  #text(size: 0.75em, fill: gray.darken(20%))[`u16`: 8 blocks, #kb("FheUint16") · `u32`: 16 blocks, #kb("FheUint32")]
-])
 ]
 
 = Rewriting code
@@ -699,6 +708,7 @@
   Two running sums (budget_hour, total) = majority of the time (% on screen) \
   Surprise: secret index (O(n)) is the cheapest: 4 entries \
   Sums slow: every addition carries across blocks → bootstraps \
+  If asked why: backup "Integers in TFHE" \
   Another scheme → another picture \
   → the scheme matters
 ]
@@ -1235,6 +1245,51 @@
   ],
   [Divide by a *public* value whenever you can.],
 )
+
+== Integers in TFHE
+
+#speaker-note[
+  Backup (moved from the main talk on 28 Oct) \
+  One ciphertext holds only a few bits → integer = row of 2-bit blocks (base-4 digits) \
+  · FheUint8 = 4 blocks · FheUint32 = 16 \
+  · why: a bootstrap = lookup table, cost explodes with bits per block \
+  a + b: add blocks (cheap), then each carry → next block = a bootstrap \
+  a > b: compare each pair (lookup), combine as a tree (more lookups) \
+  Cost ≈ bootstraps ≈ blocks · size: 1 byte → 66 KB \
+  If asked: backups "66 KB", "How is one block encrypted?", "How does select work?" \
+  Sources: research/operations.md, research/ciphertext-size.md
+]
+
+#[
+#set text(size: 0.8em)
+`FheUint8` = 4 ciphertexts of *2 bits* each:
+#v(0.3em)
+#align(center, block(width: 80%, stack(dir: ltr, spacing: 3pt,
+  ..range(4).map(i => block-box(24.5%, cyan.lighten(60%))[2 bits]))))
+#v(0.8em)
+#grid(
+  columns: (1fr, 1fr),
+  column-gutter: 2em,
+  align: top,
+  [
+    *$a + b$*
+    - add block by block: cheap
+    - move each *carry* to the next block: *a bootstrap each*
+  ],
+  [
+    *$a > b$*
+    - compare each pair of blocks: a lookup
+    - combine the results: more lookups
+  ],
+)
+#v(0.8em)
+#align(center, text(size: 1.2em)[
+  Cost ≈ number of bootstraps ≈ number of blocks. \
+  #v(0.3em)
+  Size: *1 byte → #kb("FheUint8")* \
+  #text(size: 0.75em, fill: gray.darken(20%))[`u16`: 8 blocks, #kb("FheUint16") · `u32`: 16 blocks, #kb("FheUint32")]
+])
+]
 
 == Why is an encrypted byte 66 KB?
 
