@@ -924,8 +924,9 @@
   · TEE: ≈ free, trust the chip vendor; physical attacks keep breaking them (TEE.fail 2026, under 1000 dollars) \
   · MPC: trust non-collusion; network; heavy setup against cheaters \
   · ZKP: proves a computation, prover holds the data \
-  · FHE: trust only the math; ≈10^9, no integrity \
-  Worth it when: nobody to trust + small fixed computation + seconds OK \
+  · FHE: secrecy rests only on the math · but correct results = trust the server (and its hardware) to run the right circuit \
+  · protects against a passive, honest-but-curious server, not an active one; no integrity \
+  Worth it when: server may compute but must not see + small fixed computation + seconds OK \
   Real systems mix: Zama = FHE + ZKP + MPC + TEE \
   Thesis line, slowly · point at the QR code \
   If asked: backup "Why not MPC or a TEE?" \
@@ -947,11 +948,11 @@
     [*TEE*], [the chip vendor, and whoever has physical access], [≈ 0–10 %], [yes],
     [*MPC*], [that the parties don't collude], [network; heavy setup against cheaters], [depends],
     [*ZKP*], [nobody, but the prover holds the data], [$10^4$–$10^6 times$], [yes],
-    [*FHE*], [*only the math*], [*≈ $10^9 times$* (our meter)], [*no*],
+    [*FHE*], [secrecy: *only the math* \ results: *the server* (it could run another circuit)], [*≈ $10^9 times$* (our meter)], [*no*],
   ),
   [
     #text(size: 1.25em)[*FHE is worth it when*]
-    - you can't trust the server, its hardware, or a second party;
+    - the server may compute, but must never see the data (an honest-but-curious server);
     - the computation is small and fixed: a lookup, a match, a few comparisons;
     - seconds and megabytes are acceptable.
     #v(0.4em)
@@ -1085,7 +1086,7 @@
 )
 #v(0.6em)
 #align(center)[
-  Choose FHE when there is *one* server and you trust *neither* its hardware *nor* a second party.
+  Choose FHE when *one* server must compute on your data *without seeing it*, \ and neither a trusted chip nor a second party is an option.
 ]
 ]
 

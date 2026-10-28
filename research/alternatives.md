@@ -109,3 +109,16 @@ Slide-ready:
 **5. Is "MPC = FHE + network" fair?** Only for one corner. With a semi-honest or honest-majority secret-sharing protocol, MPC does almost no cryptography online: shares are the size of the plaintext, additions are free, a multiplication or AND costs one message, and billions of gates per second are possible ([ePrint 2016/768](https://eprint.iacr.org/2016/768)). There, the cost is purely network: bytes per non-linear gate and, on a WAN, round trips × latency. With malicious security and a dishonest majority (SPDZ family), the triples come from lattice HE (SPDZ, Overdrive: CPU-bound, FHE-like, though only somewhat-homomorphic, no bootstrapping) or from OT (MASCOT: tens of KB per triple). That corner really is "HE plus network", and it runs ~4000× slower than the cheap corner on the same task ([ePrint 2020/521](https://eprint.iacr.org/2020/521), Tables 5–6). The one head-to-head comparison I found (private ML inference) says: "Under low-latency and/or high-bandwidth network configurations … MPC achieves the best end-to-end latency and throughput", "FHE exhibits the highest total energy consumption in most regimes", and the money cost of MPC "is driven by total communication volume" ([Huang, Maeng, Suh, arXiv 2604.00169](https://arxiv.org/abs/2604.00169)). The smart meter's comparisons and branches hurt MPC through round trips, whereas in FHE they hurt through bootstrapping.
 
 Correction: §2's "latency and bandwidth between the parties set the speed, not the CPU" holds for garbled circuits and semi-honest secret sharing. It does not hold for HE-based malicious preprocessing (SPDZ, Overdrive), which is CPU-bound on a LAN ([ePrint 2016/505](https://eprint.iacr.org/2016/505), [ePrint 2017/1230](https://eprint.iacr.org/2017/1230)). The slide line "network traffic and round trips, not computation" should read something like "mostly network traffic and round trips; with malicious security, also heavy preprocessing".
+
+## Correction: what "trust only the math" covers (2026-10-28)
+
+The table above says FHE trusts "nobody except the key holder". That holds for **secrecy
+only**. FHE gives confidentiality against the server, but no integrity: the server can
+evaluate a different circuit, or return garbage, and the client cannot tell (see
+`attacks.md`, Viand et al., [arXiv 2301.07041](https://arxiv.org/abs/2301.07041)). So for
+correct results you still trust the server, and therefore its hardware and operators, to
+run the agreed circuit. In the usual terminology FHE alone protects against a
+*semi-honest* ("honest-but-curious", passive) server; against an active (malicious)
+server it keeps the inputs secret only as long as decrypted results are not shared back
+(IND-CPA^D, `attacks.md`), and it never guarantees the result. Slides worded accordingly:
+"secrecy: only the math · results: the server".
